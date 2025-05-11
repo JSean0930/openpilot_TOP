@@ -127,7 +127,7 @@ def get_stopped_equivalence_factor(v_lead, v_ego):
 def get_safe_obstacle_distance(v_ego, t_follow, stop_distance=None):
   if stop_distance is None:
     stop_distance = get_STOP_DISTANCE()
-  return (v_ego**4) / (2 * COMFORT_BRAKE) + t_follow * v_ego + stop_distance
+  return (v_ego**3) / (2 * COMFORT_BRAKE) + t_follow * v_ego + stop_distance
 
 def desired_follow_distance(v_ego, v_lead, t_follow=None, stop_distance=None):
   if t_follow is None:
