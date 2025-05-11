@@ -50,7 +50,8 @@ class VisionTurnController:
 
     # get the maximum curve based on the current velocity
     v_ego = max(v_ego, 0.1) # ensure a value greater than 0 for calculations
-    max_curve = self.max_pred_lat_acc / (v_ego**2)
+    max_curve = self.max_pred_lat_acc / (v_ego**1.5)
+    #max_curve = self.max_pred_lat_acc / (v_ego**2)
 
     # Get the target velocity for the maximum curve
     if max_curve <= 0:
