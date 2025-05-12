@@ -1,14 +1,3 @@
-
-# === 動態 N 設置 ===
-def get_dynamic_n(v_ego):
-    # 根據車速自適應地減少預測步數
-    if v_ego < 10:
-        return 8  # 低速，減少計算量
-    elif v_ego < 20:
-        return 10  # 中速，平衡精度與性能
-    else:
-        return 12  # 高速，較高預測步數
-
 #!/usr/bin/env python3
 import os
 import time
@@ -58,6 +47,15 @@ LIMIT_COST = 1e6
 ACADOS_SOLVER_TYPE = 'SQP_RTI'
 
 
+# === 動態 N 設置 ===
+def get_dynamic_n(v_ego):
+    # 根據車速自適應地減少預測步數
+    if v_ego < 10:
+        return 8  # 低速，減少計算量
+    elif v_ego < 20:
+        return 10  # 中速，平衡精度與性能
+    else:
+        return 12  # 高速，較高預測步數
 
 # === 靜態變數初始化 (只計算一次) ===
 T_IDXS_LST = [index_function(idx, max_val=MAX_T, max_idx=N) for idx in range(N+1)]
