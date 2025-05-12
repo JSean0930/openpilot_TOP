@@ -122,12 +122,12 @@ def get_stopped_equivalence_factor(v_lead, v_ego):
     v_diff_offset = delta_speed ** 6
     v_diff_offset = np.clip(v_diff_offset, 0, v_diff_offset_max)
     v_diff_offset = np.maximum(v_diff_offset * ((speed_to_reach_max_v_diff_offset - v_ego)/speed_to_reach_max_v_diff_offset), 0)
-  return (v_lead**5) / (2 * COMFORT_BRAKE) + v_diff_offset
+  return (v_lead**2) / (2 * COMFORT_BRAKE) + v_diff_offset
 
 def get_safe_obstacle_distance(v_ego, t_follow, stop_distance=None):
   if stop_distance is None:
     stop_distance = get_STOP_DISTANCE()
-  return (v_ego**3) / (2 * COMFORT_BRAKE) + t_follow * v_ego + stop_distance
+  return (v_ego**2) / (2 * COMFORT_BRAKE) + t_follow * v_ego + stop_distance
 
 def desired_follow_distance(v_ego, v_lead, t_follow=None, stop_distance=None):
   if t_follow is None:
@@ -212,7 +212,7 @@ def gen_long_ocp():
   # from an obstacle at every timestep. This obstacle can be a lead car
   # or other object. In e2e mode we can use x_position targets as a cost
   # instead.
-  costs = [((x_obstacle - x_ego) - (desired_dist_comfort)) / (v_ego - 20.),
+  costs = [((x_obstacle - x_ego) - (desired_dist_comfort)) / (v_ego + 10.),
            x_ego,
            v_ego,
            a_ego,
@@ -228,7 +228,7 @@ def gen_long_ocp():
                         (a_ego - a_min),
                         (a_max - a_ego),
                         #((x_obstacle - x_ego) - lead_danger_factor * (desired_dist_comfort)) /（v_ego + 20.))
-                        ((x_obstacle - x_ego) - lead_danger_factor * (desired_dist_comfort)) / (v_ego - 20.))
+                        ((x_obstacle - x_ego) - lead_danger_factor * (desired_dist_comfort)) / (v_ego + 10.))
   ocp.model.con_h_expr = constraints
 
   x0 = np.zeros(X_DIM)
@@ -411,13 +411,13 @@ class LongitudinalMpc:
 
     # Update in ACC mode or ACC/e2e blend
     if self.mode == 'acc':
-      self.params[:,5] = LEAD_DANGER_FACTOR
+      self.params[:,5] = LEAD_DANGER_FACTOR * 0.8
 
       # Fake an obstacle for cruise, this ensures smooth acceleration to set speed
       # when the leads are no factor.
-      v_lower = v_ego + (T_IDXS * CRUISE_MIN_ACCEL * 1.05)
+      v_lower = v_ego + (T_IDXS * CRUISE_MIN_ACCEL * 0.9)
       # TODO does this make sense when max_a is negative?
-      v_upper = v_ego + (T_IDXS * CRUISE_MAX_ACCEL * 1.05)
+      v_upper = v_ego + (T_IDXS * CRUISE_MAX_ACCEL * 1.2)
       v_cruise_clipped = np.clip(v_cruise * np.ones(N+1),
                                  v_lower,
                                  v_upper)
@@ -433,14 +433,20 @@ class LongitudinalMpc:
 
       x_obstacles = np.column_stack([lead_0_obstacle,
                                      lead_1_obstacle])
-      cruise_target = T_IDXS * np.clip(v_cruise, v_ego - 2.0, 1e3) + x[0]
+      cruise_target = T_IDXS * np.clip(v_cruise * 1.1, v_ego - 4.0, 1e3) + x[0]
       xforward = ((v[1:] + v[:-1]) / 2) * (T_IDXS[1:] - T_IDXS[:-1])
       x = np.cumsum(np.insert(xforward, 0, x[0]))
 
-      x_and_cruise = np.column_stack([x, cruise_target])
-      x = np.min(x_and_cruise, axis=1)
+      x_and_cruise = np.column_stack([x * 0.95, cruise_target])
+      #x = np.max(x_and_cruise, axis=1)
+      w = np.clip((v_ego - 5.0) / 15.0, 0.0, 1.0)
+      x = (1 - w) * np.min(x_and_cruise, axis=1) + w * np.max(x_and_cruise, axis=1)
 
-      self.source = 'e2e' if x_and_cruise[1,0] < x_and_cruise[1,1] else 'cruise'
+      #self.source = 'e2e' if x_and_cruise[1,0] < x_and_cruise[1,1] else 'cruise'
+      if x_and_cruise[1,0] > x_and_cruise[1,1] * 1.1 :
+        self.source = 'e2e'
+      else
+        self.source = 'cruise'
 
     else:
       raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner update')
