@@ -442,11 +442,7 @@ class LongitudinalMpc:
       w = np.clip((v_ego - 5.0) / 15.0, 0.0, 1.0)
       x = (1 - w) * np.min(x_and_cruise, axis=1) + w * np.max(x_and_cruise, axis=1)
 
-      #self.source = 'e2e' if x_and_cruise[1,0] < x_and_cruise[1,1] else 'cruise'
-      if x_and_cruise[1,0] > x_and_cruise[1,1] * 1.1 :
-        self.source = 'e2e'
-      else
-        self.source = 'cruise'
+      self.source = 'e2e' if x_and_cruise[1,0] > x_and_cruise[1,1] *1.1 else 'cruise'
 
     else:
       raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner update')
