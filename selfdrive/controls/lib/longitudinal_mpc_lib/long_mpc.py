@@ -433,15 +433,20 @@ class LongitudinalMpc:
 
       x_obstacles = np.column_stack([lead_0_obstacle,
                                      lead_1_obstacle])
+      # cruise 目標距離（略為積極）
       cruise_target = T_IDXS * np.clip(v_cruise * 1.1, v_ego - 4.0, 1e3) + x[0]
-      xforward = ((v[1:] + v[:-1]) / 2) * (T_IDXS[1:] - T_IDXS[:-1])
+
+      # e2e 預測距離
+      xforward = ((v[1:] + v[:-1]) / 2) * (T_IDXS[1:] - T_IDXS[:-1]) 
       x = np.cumsum(np.insert(xforward, 0, x[0]))
 
+      # 混合 e2e 和 cruise，根據速度平滑插值
       x_and_cruise = np.column_stack([x * 0.95, cruise_target])
       #x = np.max(x_and_cruise, axis=1)
+      #計算速度加權：低速偏 e2e，高速偏 cruise
       w = np.clip((v_ego - 5.0) / 15.0, 0.0, 1.0)
       x = (1 - w) * np.min(x_and_cruise, axis=1) + w * np.max(x_and_cruise, axis=1)
-
+      # 若 e2e 比 cruise 明顯遠，才使用 e2e 作為來源
       self.source = 'e2e' if x_and_cruise[1,0] > x_and_cruise[1,1] *1.1 else 'cruise'
 
     else:
