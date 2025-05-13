@@ -1,10 +1,3 @@
-
-if self.source == 'e2e':
-    # 調整成本參數以提升起步積極性
-    A_EGO_COST = 0.5  # 降低加速抑制
-    X_EGO_OBSTACLE_COST = 1.0  # 避免過度保守
-    V_EGO_COST = 1.0  # 鼓勵提升速度
-
 #!/usr/bin/env python3
 import os
 import time
@@ -54,6 +47,11 @@ LIMIT_COST = 1e6
 NUMERIC_EPS = 1e-4  # 小數值以避免除以零或數值不穩定
 ACADOS_SOLVER_TYPE = 'SQP_RTI'
 
+if self.source == 'e2e':
+    # 調整成本參數以提升起步積極性
+    A_EGO_COST = 0.5  # 降低加速抑制
+    X_EGO_OBSTACLE_COST = 1.0  # 避免過度保守
+    V_EGO_COST = 1.0  # 鼓勵提升速度
 
 # 減少時間點不會影響效能並能帶來
 # 更好的 MPC 收斂效果，且所需疊代次數更少
