@@ -1,22 +1,3 @@
-
-# === 動態預測步數 N 設定 ===
-def get_dynamic_n(v_ego):
-    if v_ego < 10:
-        return 8
-    elif v_ego < 20:
-        return 10
-    else:
-        return 12
-
-
-# === Cost function 衰減因子（jerk/accel） ===
-def get_cost_decay(i, N):
-    return 1.0 - 0.8 * (i / max(N-1, 1))**2
-
-
-# === E2E 起步跟隨靈敏度參數 ===
-E2E_START_FOLLOW_SENSITIVITY = 1.2
-
 #!/usr/bin/env python3
 import os
 import time
@@ -31,6 +12,8 @@ from openpilot.common.swaglog import cloudlog
 # WARNING: imports outside of constants will not trigger a rebuild
 from openpilot.selfdrive.modeld.constants import index_function
 from openpilot.selfdrive.controls.radard import _LEAD_ACCEL_TAU
+
+#優化 cost function / warm start / 降低計算負擔 / E2E 模式下起步跟隨靈敏度
 
 if __name__ == '__main__':  # generating code
   from openpilot.third_party.acados.acados_template import AcadosModel, AcadosOcp, AcadosOcpSolver
@@ -65,6 +48,24 @@ LEAD_DANGER_FACTOR = 0.75
 LIMIT_COST = 1e6
 ACADOS_SOLVER_TYPE = 'SQP_RTI'
 
+
+# === 動態預測步數 N 設定 ===
+def get_dynamic_n(v_ego):
+    if v_ego < 10:
+        return 8
+    elif v_ego < 20:
+        return 10
+    else:
+        return 12
+
+
+# === Cost function 衰減因子（jerk/accel） ===
+def get_cost_decay(i, N):
+    return 1.0 - 0.8 * (i / max(N-1, 1))**2
+
+
+# === E2E 起步跟隨靈敏度參數 ===
+E2E_START_FOLLOW_SENSITIVITY = 1.2
 
 # Fewer timestamps don't hurt performance and lead to
 # much better convergence of the MPC with low iterations
