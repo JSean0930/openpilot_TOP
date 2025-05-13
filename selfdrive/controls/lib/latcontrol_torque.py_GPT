@@ -7,10 +7,6 @@ from opendbc.car.interfaces import LatControlInputs
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
 from opendbc.car.vehicle_model import ACCELERATION_DUE_TO_GRAVITY
-
-# 計算速度自適應因子
-speed_factor = max(0.5, min(1.5, 1.0 + 0.1 * (v_ego / 20)))
-
 from openpilot.selfdrive.controls.lib.latcontrol import LatControl
 from openpilot.common.pid import PIDController
 from openpilot.selfdrive.modeld.constants import ModelConstants
@@ -25,6 +21,9 @@ from openpilot.selfdrive.modeld.constants import ModelConstants
 # use a LOW_SPEED_FACTOR in the error. Additionally, there is
 # friction in the steering wheel that needs to be overcome to
 # move it at all, this is compensated for too.
+
+# 計算速度自適應因子
+speed_factor = max(0.5, min(1.5, 1.0 + 0.1 * (v_ego / 20)))
 
 LOW_SPEED_X = [0, 10, 20, 30]
 LOW_SPEED_Y = [15, 13, 10, 5]
