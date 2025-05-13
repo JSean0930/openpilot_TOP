@@ -394,9 +394,9 @@ class LongitudinalMpc:
   def extrapolate_lead(x_lead, v_lead, a_lead, a_lead_tau):
 
   # === 前車預測優化 ===
-  MAX_DECEL = -3.0
+  MAXDECEL = -3.0
   lead_buffer = 2.0  # m
-  a_lead = max(a_lead, MAX_DECEL)
+  a_lead = max(a_lead, MAXDECEL)
 
   x_lead_0 = np.zeros(N+1)
   v_lead_0 = np.zeros(N+1)
