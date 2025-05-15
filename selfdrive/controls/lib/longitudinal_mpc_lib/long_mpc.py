@@ -38,7 +38,7 @@ X_EGO_OBSTACLE_COST = 2. # 降低避障成本以避免過於保守
 X_EGO_COST = 1.0  # 增加以提升車距追蹤精度
 V_EGO_COST = 1.0  # 適度權重於自車速度
 A_EGO_COST = 0.5  # 對加速度施加小懲罰以平滑動作曲線
-J_EGO_COST = 5.0  # 降低 jerk 懲罰以提高反應靈敏度
+J_EGO_COST = 3.0  # 降低 jerk 懲罰以提高反應靈敏度
 A_CHANGE_COST = 150.  # 降低以提供更大加速自由度
 DANGER_ZONE_COST = 100.
 CRASH_DISTANCE = .25
@@ -436,7 +436,7 @@ class LongitudinalMpc:
       x_obstacles = np.column_stack([lead_0_obstacle,
                                      lead_1_obstacle])
       # cruise 目標距離（略為積極）
-      cruise_target = T_IDXS * np.clip(v_cruise * 1.1, v_ego - 4.0, 1e3) + x[0]
+      cruise_target = T_IDXS * np.clip(v_cruise * 1.0, v_ego - 4.0, 1e3) + x[0]
 
       # e2e 預測距離
       xforward = ((v[1:] + v[:-1]) / 2) * (T_IDXS[1:] - T_IDXS[:-1]) 
