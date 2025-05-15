@@ -50,12 +50,12 @@ ACADOS_SOLVER_TYPE = 'SQP_RTI'
 
 # 減少時間點不會影響效能並能帶來
 # 更好的 MPC 收斂效果，且所需疊代次數更少
-N = 12
-MAX_T = 10.0
+N = 16 #12
+MAX_T = 15.0 #10.0
 # 根據 N 與 MAX_T 調整的預測時間範圍
 #T_IDXS_LST = np.linspace(0, MAX_T, N + 1) ** 1.2  # 強化短期預測的精度
 #T_IDXS = np.array(T_IDXS_LST)
-T_IDXS = (np.linspace(0, 1, N + 1) ** 2.3) * MAX_T # 調整 **數字提升前其靈敏度(2.0前段密集、後段拉開明顯, 2.5-3.0前段極度靈敏（不自然）)
+T_IDXS = (np.linspace(0, 1, N + 1) ** 2.0) * MAX_T # 調整 **數字提升前其靈敏度(2.0前段密集、後段拉開明顯, 2.5-3.0前段極度靈敏（不自然）)
 FCW_IDXS = T_IDXS < 5.0
 T_DIFFS = np.diff(T_IDXS, prepend=[0.])
 COMFORT_BRAKE = 2.5
