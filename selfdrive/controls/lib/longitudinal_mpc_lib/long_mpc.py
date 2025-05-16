@@ -443,7 +443,7 @@ class LongitudinalMpc:
       x = np.cumsum(np.insert(xforward, 0, x[0]))
 
       # 混合 e2e 和 cruise，根據速度平滑插值
-      x_and_cruise = np.column_stack([x * 0.95, cruise_target]) # 將e2e預測距離增量乘以0.95，使e2e血糖對加速目標略顯保守。數值越接近 1，e2e 的影響越大；越小，則更偏向 cruise，進而影響加速決策和引擎轉速
+      x_and_cruise = np.column_stack([x * 0.95, cruise_target]) # 將 e2e 預測距離額外乘以 0.95，會讓 e2e 軌跡對加速目標略顯保守。數值越接近 1，e2e 的影響越大；越小，則更偏向 cruise，進而影響加速決策和引擎轉速。
       #x = np.max(x_and_cruise, axis=1)
       #計算速度加權：低速偏 e2e，高速偏 cruise
       w = np.clip((v_ego - 5.0) / 10.0, 0.0, 1.0)  #15
