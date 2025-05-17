@@ -84,30 +84,47 @@ def get_T_FOLLOW(personality=log.LongitudinalPersonality.standard):
   else:
     raise NotImplementedError("Longitudinal personality not supported")
 
+def get_dynamic_follow(v_ego, delta_v=0.0, a_lead=0.0, personality=log.LongitudinalPersonality.standard):
+  """
+  動態跟車時間頭距計算，根據：
+    - 車速（v_ego）
+    - 個性（personality）
+    - 與前車速差（delta_v = v_lead - v_ego）
+    - 前車加速度（a_lead < 0 代表減速）
 
-def get_dynamic_follow(v_ego, personality=log.LongitudinalPersonality.standard):
-  # The Dynamic follow function is adjusted by Marc(cgw1968-5779)
-  if personality==log.LongitudinalPersonality.relaxed:
-    x_vel =  [0.,  6,   10., 10.01, 15., 27.7]
-    y_dist = [1.2, 1.4, 1.4,  1.5, 1.65,  1.8]
-  elif personality==log.LongitudinalPersonality.standard:
-    x_vel =  [0.,  6,   10., 10.01, 15., 27.7]
-    y_dist = [1.1, 1.3, 1.35, 1.4,  1.4, 1.45]
-  elif personality==log.LongitudinalPersonality.aggressive:
-    x_vel =  [0.,  6,   10., 10.01, 15., 27.7]
-    y_dist = [1.0, 1.2, 1.0,   0.9, 0.95, 1.0]
+  輸出：
+    - t_follow：建議跟車秒數
+  """
+
+  # 個性化參數設定（越 relaxed 越保守）
+  if personality == log.LongitudinalPersonality.relaxed:
+    min_dist, max_dist = 1.2, 1.55
+  elif personality == log.LongitudinalPersonality.standard:
+    min_dist, max_dist = 1.1, 1.45
+  elif personality == log.LongitudinalPersonality.aggressive:
+    min_dist, max_dist = 1.0, 1.25
   else:
     raise NotImplementedError("Dynamic Follow personality not supported")
-  return np.interp(v_ego, x_vel, y_dist)
 
+  # 基礎速度 sigmoid 平滑調整
+  v_scale = 10.0  # 中心點
+  k = 0.3         # 斜率控制
+  ratio = 1 / (1 + np.exp(-k * (v_ego - v_scale)))
+  base_t_follow = min_dist + (max_dist - min_dist) * ratio
+
+  # 精準度提升：依速差與前車減速微調
+  delta_v_adj = np.clip(delta_v * 0.05, -0.3, 0.5)        # 趨近前車時增加距離
+  a_lead_adj = np.clip(-a_lead * 0.1, 0.0, 0.3)            # 前車減速時進一步增加距離
+
+  return base_t_follow + delta_v_adj + a_lead_adj
 
 def get_STOP_DISTANCE(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
     return 6.0
   elif personality==log.LongitudinalPersonality.standard:
-    return 5.5
+    return 6.0
   elif personality==log.LongitudinalPersonality.aggressive:
-    return 5.5
+    return 6.0
   else:
     raise NotImplementedError("Longitudinal personality not supported")
 
