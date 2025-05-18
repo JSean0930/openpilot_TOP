@@ -480,9 +480,8 @@ class LongitudinalMpc:
     else:
     # 若當前是 cruise，需 e2e 表現明顯較好才切入（較嚴格）
       self.source = 'e2e' if x_and_cruise[1, 0] > x_and_cruise[1, 1] * 1.05 else 'cruise'
-    
-    else:
-      raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner update')
+      else:
+        raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner update')
 
     self.yref[:,1] = x
     self.yref[:,2] = v
