@@ -114,6 +114,8 @@ def get_dynamic_follow(v_ego, delta_v=0.0, a_lead=0.0, personality=log.Longitudi
   ratio = 1 / (1 + np.exp(-k * (v_ego - v_scale))) # 表示在低速時趨近 0，高速時趨近 1，作用為「慢車用 min_dist、快車用 max_dist」之間的插值。
   base_t_follow = min_dist + (max_dist - min_dist) * ratio
 
+  delta_v = v_lead - v_ego # 與前車速差
+
   # 精準度提升：依速差與前車減速微調
   delta_v_adj = np.clip(delta_v * 0.05, -0.3, 0.5)        # 趨近前車時增加距離
   a_lead_adj = np.clip(-a_lead * 0.1, 0.0, 0.3)            # 前車減速時進一步增加距離
