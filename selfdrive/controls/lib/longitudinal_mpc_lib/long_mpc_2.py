@@ -455,25 +455,39 @@ class LongitudinalMpc:
 
     elif self.mode == 'blended':
       self.params[:,5] = 1.0
-
-      x_obstacles = np.column_stack([lead_0_obstacle,
-                                     lead_1_obstacle])
-      # cruise 目標距離（略為積極）
+    
+      x_obstacles = np.column_stack([lead_0_obstacle, lead_1_obstacle])
+    
+      # Cruise 預測距離
       cruise_target = T_IDXS * np.clip(v_cruise * 1.0, v_ego - 2.0, 1e3) + x[0] # *1.0是放大係數（可改為 >1.0 讓巡航更激進，或 <1.0 更保守），下限 v_ego - 2.0 決定了當車速高於目標時是否允許輕微減速。
-
-      # e2e 預測距離
+    
+      # E2E 預測距離
       xforward = ((v[1:] + v[:-1]) / 2) * (T_IDXS[1:] - T_IDXS[:-1]) 
-      x = np.cumsum(np.insert(xforward, 0, x[0]))
-
-      # 混合 e2e 和 cruise，根據速度平滑插值
-      x_and_cruise = np.column_stack([x * 0.95, cruise_target]) # 將 e2e 預測距離額外乘以 0.95，會讓 e2e 軌跡對加速目標略顯保守。數值越接近 1，e2e 的影響越大；越小，則更偏向 cruise，進而影響加速決策和引擎轉速。
-      #x = np.max(x_and_cruise, axis=1)
-      #計算速度加權：低速偏 e2e，高速偏 cruise
-      w = np.clip((v_ego - 5.0) / 10.0, 0.0, 1.0)  #15
-      x = (1 - w) * np.min(x_and_cruise, axis=1) + w * np.max(x_and_cruise, axis=1)
-      # 若 e2e 比 cruise 明顯遠，才使用 e2e 作為來源
-      self.source = 'e2e' if x_and_cruise[1,0] > x_and_cruise[1,1] *1.1 else 'cruise' # 當 e2e 預測距離較 cruise 超前 10% 時，才真正採用 e2e 軌跡。這個閾值越低，越容易觸發 e2e 跟隨，其激進程度也越可能推高轉速。
-
+      x_e2e = np.cumsum(np.insert(xforward, 0, x[0])) * 0.95  # 將 e2e 預測距離額外乘以 0.95，會讓 e2e 軌跡對加速目標略顯保守。數值越接近 1，e2e 的影響越大；越小，則更偏向 cruise，進而影響加速決策和引擎轉速。
+    
+      # 動態混合：依車速從 e2e 過渡到 cruise
+      v_low, v_high = 5.0, 15.0  # 可調整：偏向 e2e ～ 偏向 cruise 的速度範圍, 提高 v_low → 讓系統更晚開始過渡到 cruise, 降低 v_high → 過渡更陡峭，變化更快
+      w = np.clip((v_ego - v_low) / (v_high - v_low), 0.0, 1.0)  # 速度轉換權重
+      x_mixed = (1 - w) * np.minimum(x_e2e, cruise_target) + w * np.maximum(x_e2e, cruise_target)
+      x = x_mixed
+    
+      # 更新 yref 軌跡
+      self.yref[:,1] = x
+      self.yref[:,2] = v
+      self.yref[:,3] = a
+      self.yref[:,5] = j
+      for i in range(N):
+        self.solver.set(i, "yref", self.yref[i])
+      self.solver.set(N, "yref", self.yref[N][:COST_E_DIM])
+    
+      # 判斷 source：遲滯策略切換（避免震盪）
+      e2e_dist = x_e2e[1]
+      cruise_dist = cruise_target[1]
+    
+      if self.source == 'e2e':
+        self.source = 'e2e' if e2e_dist > cruise_dist * 0.95 else 'cruise'
+      else:
+        self.source = 'e2e' if e2e_dist > cruise_dist * 1.05 else 'cruise'
     else:
       raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner update')
 
