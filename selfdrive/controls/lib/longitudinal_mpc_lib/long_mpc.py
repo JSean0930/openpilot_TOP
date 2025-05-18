@@ -109,9 +109,9 @@ def get_dynamic_follow(v_ego, delta_v=0.0, a_lead=0.0, personality=log.Longitudi
     raise NotImplementedError("Dynamic Follow personality not supported")
 
   # 基礎速度 sigmoid 平滑調整
-  v_scale = 10.0  # 中心點
-  k = 0.3         # 斜率控制
-  ratio = 1 / (1 + np.exp(-k * (v_ego - v_scale)))
+  v_scale = 10.0  # 中心點, 車速的轉折點，當 v_ego = 10 m/s（約 36 km/h）時，sigmoid 的輸出為 0.5。
+  k = 0.3         # 斜率控制, 控制 sigmoid 函數的斜率。越大轉折越快，越小變化越平滑。
+  ratio = 1 / (1 + np.exp(-k * (v_ego - v_scale))) # 表示在低速時趨近 0，高速時趨近 1，作用為「慢車用 min_dist、快車用 max_dist」之間的插值。
   base_t_follow = min_dist + (max_dist - min_dist) * ratio
 
   # 精準度提升：依速差與前車減速微調
