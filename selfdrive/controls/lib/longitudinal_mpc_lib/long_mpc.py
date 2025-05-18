@@ -411,7 +411,7 @@ class LongitudinalMpc:
     lead_xv = self.extrapolate_lead(x_lead, v_lead, a_lead, a_lead_tau)
     return lead_xv
 
-  def update(self, radarstate, v_cruise, x, v, a, j, personality=log.LongitudinalPersonality.standard, dynamic_follow=False):
+  def update(self, radarstate, v_cruise, x, v, a, j, v_lead, a_lead, personality=log.LongitudinalPersonality.standard, dynamic_follow=False):
     t_follow = get_T_FOLLOW(personality)
     v_ego = self.x0[1]
     t_follow = get_T_FOLLOW(personality) if not dynamic_follow else get_dynamic_follow(v_ego, v_lead, a_lead, personality)
