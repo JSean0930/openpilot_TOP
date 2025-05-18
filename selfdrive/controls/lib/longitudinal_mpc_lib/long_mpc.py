@@ -86,7 +86,7 @@ def get_T_FOLLOW(personality=log.LongitudinalPersonality.standard):
 
 
 
-def get_dynamic_follow(v_ego, delta_v=0.0, a_lead=0.0, personality=log.LongitudinalPersonality.standard):
+def get_dynamic_follow(v_ego, v_lead, a_lead=0.0, personality=log.LongitudinalPersonality.standard):
   """
   動態跟車時間頭距計算，根據：
     - 車速（v_ego）
@@ -113,6 +113,8 @@ def get_dynamic_follow(v_ego, delta_v=0.0, a_lead=0.0, personality=log.Longitudi
   k = 0.3         # 斜率控制, 控制 sigmoid 函數的斜率。越大轉折越快，越小變化越平滑。
   ratio = 1 / (1 + np.exp(-k * (v_ego - v_scale))) # 表示在低速時趨近 0，高速時趨近 1，作用為「慢車用 min_dist、快車用 max_dist」之間的插值。
   base_t_follow = min_dist + (max_dist - min_dist) * ratio
+
+  delta_v = v_lead - v_ego #與前車速差
 
   # 精準度提升：依速差與前車減速微調
   delta_v_adj = np.clip(delta_v * 0.05, -0.3, 0.5)        # 趨近前車時增加距離
@@ -412,7 +414,7 @@ class LongitudinalMpc:
   def update(self, radarstate, v_cruise, x, v, a, j, personality=log.LongitudinalPersonality.standard, dynamic_follow=False):
     t_follow = get_T_FOLLOW(personality)
     v_ego = self.x0[1]
-    t_follow = get_T_FOLLOW(personality) if not dynamic_follow else get_dynamic_follow(v_ego, delta_v, a_lead, personality)
+    t_follow = get_T_FOLLOW(personality) if not dynamic_follow else get_dynamic_follow(v_ego, v_lead, a_lead, personality)
     stop_distance = get_STOP_DISTANCE(personality)
 
     if Params().get_bool("ToyotaTune") and not (self.CP.flags & ToyotaFlags.SMART_DSU):
