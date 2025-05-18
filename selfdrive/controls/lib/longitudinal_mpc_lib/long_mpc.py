@@ -474,13 +474,13 @@ class LongitudinalMpc:
       # 若 e2e 比 cruise 明顯遠，才使用 e2e 作為來源
       #self.source = 'e2e' if x_and_cruise[1,0] > x_and_cruise[1,1] *1.1 else 'cruise' # 當 e2e 預測距離較 cruise 超前 10% 時，才真正採用 e2e 軌跡。這個閾值越低，越容易觸發 e2e 跟隨，其激進程度也越可能推高轉速。
       # 模式切換帶有遲滯，避免頻繁來回切換
-    if self.source == 'e2e':
-    # 若當前是 e2e，只有當 e2e 明顯比 cruise 差才退回 cruise（較寬鬆）
-      self.source = 'e2e' if x_and_cruise[1, 0] > x_and_cruise[1, 1] * 0.95 else 'cruise'
-    else:
-    # 若當前是 cruise，需 e2e 表現明顯較好才切入（較嚴格）
-      self.source = 'e2e' if x_and_cruise[1, 0] > x_and_cruise[1, 1] * 1.05 else 'cruise'
+      if self.source == 'e2e':
+      # 若當前是 e2e，只有當 e2e 明顯比 cruise 差才退回 cruise（較寬鬆）
+        self.source = 'e2e' if x_and_cruise[1, 0] > x_and_cruise[1, 1] * 0.95 else 'cruise'
       else:
+      # 若當前是 cruise，需 e2e 表現明顯較好才切入（較嚴格）
+        self.source = 'e2e' if x_and_cruise[1, 0] > x_and_cruise[1, 1] * 1.05 else 'cruise'
+    else:
         raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner update')
 
     self.yref[:,1] = x
