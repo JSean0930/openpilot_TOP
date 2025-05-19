@@ -143,9 +143,9 @@ def get_safe_obstacle_distance(v_ego, t_follow, stop_distance=None):
     stop_distance = get_STOP_DISTANCE()
   return (v_ego**2) / (2 * COMFORT_BRAKE) + t_follow * v_ego + stop_distance
 
-def desired_follow_distance(v_ego, v_lead, t_follow=None, stop_distance=None):
+def desired_follow_distance(v_ego, v_lead, a_lead, t_follow=None, stop_distance=None):
   if t_follow is None:
-    t_follow = get_T_FOLLOW()
+    t_follow = get_adaptive_T_FOLLOW()
   if stop_distance is None:
     stop_distance = get_STOP_DISTANCE()
   return get_safe_obstacle_distance(v_ego, t_follow, stop_distance) - get_stopped_equivalence_factor(v_lead, v_ego)
@@ -246,7 +246,7 @@ def gen_long_ocp():
 
   x0 = np.zeros(X_DIM)
   ocp.constraints.x0 = x0
-  ocp.parameter_values = np.array([-1.2, 1.2, 0.0, 0.0, get_T_FOLLOW(), LEAD_DANGER_FACTOR, get_STOP_DISTANCE()])
+  ocp.parameter_values = np.array([-1.2, 1.2, 0.0, 0.0, get_adaptive_T_FOLLOW(), LEAD_DANGER_FACTOR, get_STOP_DISTANCE()])
 
 
   # We put all constraint cost weights to 0 and only set them at runtime
