@@ -388,10 +388,9 @@ class LongitudinalMpc:
     lead_xv = self.extrapolate_lead(x_lead, v_lead, a_lead, a_lead_tau)
     return lead_xv
 
-  def update(self, radarstate, v_cruise, x, v, a, j, personality=log.LongitudinalPersonality.standard, dynamic_follow=False):
-    t_follow = get_T_FOLLOW(personality)
+ def update(self, radarstate, v_cruise, x, v, a, j, personality=log.LongitudinalPersonality.standard, dynamic_follow=False):
     v_ego = self.x0[1]
-    t_follow = get_T_FOLLOW(personality) if not dynamic_follow else get_dynamic_follow(v_ego, personality)
+    t_follow = get_dynamic_follow(v_ego, personality) if dynamic_follow else get_T_FOLLOW(personality)
     stop_distance = get_STOP_DISTANCE(personality)
 
     if Params().get_bool("ToyotaTune") and not (self.CP.flags & ToyotaFlags.SMART_DSU):
@@ -402,65 +401,64 @@ class LongitudinalMpc:
     lead_xv_0 = self.process_lead(radarstate.leadOne)
     lead_xv_1 = self.process_lead(radarstate.leadTwo)
 
-    # To estimate a safe distance from a moving lead, we calculate how much stopping
-    # distance that lead needs as a minimum. We can add that to the current distance
-    # and then treat that as a stopped car/obstacle at this new distance.
     lead_0_obstacle = lead_xv_0[:,0] + get_stopped_equivalence_factor(lead_xv_0[:,1], v_ego)
     lead_1_obstacle = lead_xv_1[:,0] + get_stopped_equivalence_factor(lead_xv_1[:,1], v_ego)
 
     self.params[:,0] = ACCEL_MIN
     self.params[:,1] = ACCEL_MAX
 
-    # Update in ACC mode or ACC/e2e blend
     if self.mode == 'acc':
       self.params[:,5] = LEAD_DANGER_FACTOR * 0.8
-
-      # Fake an obstacle for cruise, this ensures smooth acceleration to set speed
-      # when the leads are no factor.
-      v_lower = v_ego + (T_IDXS * CRUISE_MIN_ACCEL * 0.95) # *越大,減速越保守
-      # TODO does this make sense when max_a is negative?
-      v_upper = v_ego + (T_IDXS * CRUISE_MAX_ACCEL * 0.9) # *越大,加速越激進
-      v_cruise_clipped = np.clip(v_cruise * np.ones(N+1),
-                                 v_lower,
-                                 v_upper)
+      v_lower = v_ego + (T_IDXS * CRUISE_MIN_ACCEL * 0.95)
+      v_upper = v_ego + (T_IDXS * CRUISE_MAX_ACCEL * 0.9)
+      v_cruise_clipped = np.clip(v_cruise * np.ones(N+1), v_lower, v_upper)
       cruise_obstacle = np.cumsum(T_DIFFS * v_cruise_clipped) + get_safe_obstacle_distance(v_cruise_clipped, t_follow, stop_distance)
       x_obstacles = np.column_stack([lead_0_obstacle, lead_1_obstacle, cruise_obstacle])
       self.source = SOURCES[np.argmin(x_obstacles[0])]
 
-      # These are not used in ACC mode
       x[:], v[:], a[:], j[:] = 0.0, 0.0, 0.0, 0.0
 
     elif self.mode == 'blended':
       self.params[:,5] = 1.0
-
-      x_obstacles = np.column_stack([lead_0_obstacle,
-                                     lead_1_obstacle])
+      x_obstacles = np.column_stack([lead_0_obstacle, lead_1_obstacle])
+      
       # cruise 目標距離（略為積極）
       cruise_target = T_IDXS * np.clip(v_cruise * 1.0, v_ego - 2.0, 1e3) + x[0] # *1.0是放大係數（可改為 >1.0 讓巡航更激進，或 <1.0 更保守），下限 v_ego - 2.0 決定了當車速高於目標時是否允許輕微減速。
-
+      
       # e2e 預測距離
-      xforward = ((v[1:] + v[:-1]) / 2) * (T_IDXS[1:] - T_IDXS[:-1]) 
-      x = np.cumsum(np.insert(xforward, 0, x[0]))
-
+      xforward = ((v[1:] + v[:-1]) / 2) * (T_IDXS[1:] - T_IDXS[:-1])
+      x_e2e = np.cumsum(np.insert(xforward, 0, x[0])) * 0.95 # 將 e2e 預測距離額外乘以 0.95，會讓 e2e 軌跡對加速目標略顯保守。數值越接近 1，e2e 的影響越大；越小，則更偏向 cruise，進而影響加速決策和引擎轉速。
       # 混合 e2e 和 cruise，根據速度平滑插值
-      x_and_cruise = np.column_stack([x * 0.95, cruise_target]) # 將 e2e 預測距離額外乘以 0.95，會讓 e2e 軌跡對加速目標略顯保守。數值越接近 1，e2e 的影響越大；越小，則更偏向 cruise，進而影響加速決策和引擎轉速。
-      #x = np.max(x_and_cruise, axis=1)
-      #計算速度加權：低速偏 e2e，高速偏 cruise
-      w = np.clip((v_ego - 5.0) / 10.0, 0.0, 1.0)  #15
-      x = (1 - w) * np.min(x_and_cruise, axis=1) + w * np.max(x_and_cruise, axis=1)
-      # 若 e2e 比 cruise 明顯遠，才使用 e2e 作為來源
-      self.source = 'e2e' if x_and_cruise[1,0] > x_and_cruise[1,1] *1.1 else 'cruise' # 當 e2e 預測距離較 cruise 超前 10% 時，才真正採用 e2e 軌跡。這個閾值越低，越容易觸發 e2e 跟隨，其激進程度也越可能推高轉速。
+      v_low, v_high = 5.0, 15.0
+      w = np.clip((v_ego - v_low) / (v_high - v_low), 0.0, 1.0)
+      x_mixed = (1 - w) * np.minimum(x_e2e, cruise_target) + w * np.maximum(x_e2e, cruise_target)
+      x[:] = x_mixed  # 修正此行
 
+      self.yref[:,1] = x
+      self.yref[:,2] = v
+      self.yref[:,3] = a
+      self.yref[:,5] = j
+      for i in range(N):
+        self.solver.set(i, "yref", self.yref[i])
+      self.solver.set(N, "yref", self.yref[N][:COST_E_DIM])
+
+      e2e_dist = x_e2e[1]
+      cruise_dist = cruise_target[1]
+      if self.source == 'e2e':
+        self.source = 'e2e' if e2e_dist > cruise_dist * 0.95 else 'cruise'
+      else:
+        self.source = 'e2e' if e2e_dist > cruise_dist * 1.05 else 'cruise'
     else:
       raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner update')
 
-    self.yref[:,1] = x
-    self.yref[:,2] = v
-    self.yref[:,3] = a
-    self.yref[:,5] = j
-    for i in range(N):
-      self.solver.set(i, "yref", self.yref[i])
-    self.solver.set(N, "yref", self.yref[N][:COST_E_DIM])
+    if self.mode != 'blended':
+      self.yref[:,1] = x
+      self.yref[:,2] = v
+      self.yref[:,3] = a
+      self.yref[:,5] = j
+      for i in range(N):
+        self.solver.set(i, "yref", self.yref[i])
+      self.solver.set(N, "yref", self.yref[N][:COST_E_DIM])
 
     self.params[:,2] = np.min(x_obstacles, axis=1)
     self.params[:,3] = np.copy(self.prev_a)
@@ -468,18 +466,17 @@ class LongitudinalMpc:
     self.params[:,6] = stop_distance
 
     self.run()
+
     if (np.any(lead_xv_0[FCW_IDXS,0] - self.x_sol[FCW_IDXS,0] < CRASH_DISTANCE) and
             radarstate.leadOne.modelProb > 0.9):
       self.crash_cnt += 1
     else:
       self.crash_cnt = 0
 
-    # Check if it got within lead comfort range
-    # TODO This should be done cleaner
     if self.mode == 'blended':
-      if any((lead_0_obstacle - get_safe_obstacle_distance(self.x_sol[:,1], t_follow, stop_distance))- self.x_sol[:,0] < 0.0):
+      if any((lead_0_obstacle - get_safe_obstacle_distance(self.x_sol[:,1], t_follow, stop_distance)) - self.x_sol[:,0] < 0.0):
         self.source = 'lead0'
-      if any((lead_1_obstacle - get_safe_obstacle_distance(self.x_sol[:,1], t_follow, stop_distance))- self.x_sol[:,0] < 0.0) and \
+      if any((lead_1_obstacle - get_safe_obstacle_distance(self.x_sol[:,1], t_follow, stop_distance)) - self.x_sol[:,0] < 0.0) and \
          (lead_1_obstacle[0] - lead_0_obstacle[0]):
         self.source = 'lead1'
 
