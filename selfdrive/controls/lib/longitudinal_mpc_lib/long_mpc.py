@@ -74,36 +74,50 @@ def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
     raise NotImplementedError("Longitudinal personality not supported")
 
 
-def get_T_FOLLOW(v_ego, v_lead, a_lead, personality=log.LongitudinalPersonality.standard):
-  # 1. 設定 personality 基礎值
-  if personality == log.LongitudinalPersonality.relaxed:
-    min_dist = 1.2
-    max_dist = 1.6
-  elif personality == log.LongitudinalPersonality.standard:
-    min_dist = 1.1
-    max_dist = 1.5
-  elif personality == log.LongitudinalPersonality.aggressive:
-    min_dist = 1.0
-    max_dist = 1.4
-  else:
-    raise NotImplementedError("Longitudinal personality not supported")
+def get_T_FOLLOW(v_ego: float, v_lead: float, a_lead: float,
+                 personality: log.LongitudinalPersonality = log.LongitudinalPersonality.standard) -> float:
+  """
+  計算自車與前車之間的目標跟車時距 (T_FOLLOW)
 
-  # 2. 基礎速度 sigmoid 平滑調整
-  v_scale = 10.0
-  k = 0.3
+  Parameters:
+    v_ego: 自車速度 [m/s]
+    v_lead: 前車速度 [m/s]
+    a_lead: 前車加速度 [m/s^2]
+    personality: 跟車個性 (relaxed / standard / aggressive)
+
+  Returns:
+    t_follow: 建議的跟車時距 [秒]
+  """
+
+  # 0. 安全檢查與預設值處理
+  if personality is None or not isinstance(personality, log.LongitudinalPersonality):
+    personality = log.LongitudinalPersonality.standard
+
+  # 1. 設定 personality 對應的基礎跟車時距範圍
+  if personality == log.LongitudinalPersonality.relaxed:
+    min_dist, max_dist = 1.2, 1.6
+  elif personality == log.LongitudinalPersonality.standard:
+    min_dist, max_dist = 1.1, 1.5
+  elif personality == log.LongitudinalPersonality.aggressive:
+    min_dist, max_dist = 1.0, 1.4
+  else:
+    raise NotImplementedError(f"Unsupported personality: {personality}")
+
+  # 2. 使用 sigmoid 根據自車速度平滑調整 base 時距
+  v_scale = 10.0  # 轉換中心點速度
+  k = 0.3         # Sigmoid 斜率，越大轉折越明顯
   ratio = 1 / (1 + np.exp(-k * (v_ego - v_scale)))
   base_t_follow = min_dist + (max_dist - min_dist) * ratio
 
-  # 3. 依速差與前車減速進一步微調
+  # 3. 根據速差與前車減速度進行微調
   delta_v = v_lead - v_ego
   delta_v_adj = np.clip(delta_v * 0.05, -0.3, 0.5)
   a_lead_adj = np.clip(-a_lead * 0.1, 0.0, 0.3)
 
-  # 4. 合成調整後的 T_FOLLOW 時距
+  # 4. 合併所有因素，輸出最終 T_FOLLOW
   t_follow = base_t_follow + delta_v_adj + a_lead_adj
 
   return t_follow
-
 
 def get_dynamic_follow(v_ego, personality=log.LongitudinalPersonality.standard):
   # The Dynamic follow function is adjusted by Marc(cgw1968-5779)
