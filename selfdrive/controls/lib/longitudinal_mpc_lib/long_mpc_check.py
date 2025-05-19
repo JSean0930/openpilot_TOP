@@ -370,22 +370,22 @@ class LongitudinalMpc:
     v_ego = self.x0[1]
     if lead is not None and lead.status:
       x_lead = lead.dRel
-      v_lead = lead.vLead
-      a_lead = lead.aLeadK
-      a_lead_tau = lead.aLeadTau
+      v_lead = np.nan_to_num(lead.vLead, nan=0.0)
+      a_lead = np.nan_to_num(lead.aLeadK, nan=0.0)
+      a_lead_tau = np.nan_to_num(lead.aLeadTau, nan=_LEAD_ACCEL_TAU)
     else:
-      # Fake a fast lead car, so mpc can keep running in the same mode
+      # Fake a fast lead car, so MPC can keep running in the same mode
       x_lead = 50.0
       v_lead = v_ego + 10.0
       a_lead = 0.0
       a_lead_tau = _LEAD_ACCEL_TAU
 
-    # MPC will not converge if immediate crash is expected
-    # Clip lead distance to what is still possible to brake for
-    min_x_lead = ((v_ego + v_lead)/2) * (v_ego - v_lead) / (-ACCEL_MIN * 2)
+    # 限制最小可追蹤距離，避免立即碰撞導致 MPC 發散
+    min_x_lead = ((v_ego + v_lead)/2) * (v_ego - v_lead) / max(-ACCEL_MIN * 2, 1e-3)
     x_lead = np.clip(x_lead, min_x_lead, 1e8)
     v_lead = np.clip(v_lead, 0.0, 1e8)
     a_lead = np.clip(a_lead, -10., 5.)
+
     lead_xv = self.extrapolate_lead(x_lead, v_lead, a_lead, a_lead_tau)
     return lead_xv
 
@@ -394,7 +394,7 @@ class LongitudinalMpc:
     t_follow = get_dynamic_follow(v_ego, personality) if dynamic_follow else get_T_FOLLOW(personality)
     stop_distance = get_STOP_DISTANCE(personality)
 
-    if Params().get_bool("ToyotaTune") and not (self.CP.flags & ToyotaFlags.SMART_DSU):
+    if self.params_store.get_bool("ToyotaTune") and not (self.CP.flags & ToyotaFlags.SMART_DSU):
       stop_distance += 3.0
 
     self.status = radarstate.leadOne.status or radarstate.leadTwo.status
@@ -478,7 +478,7 @@ class LongitudinalMpc:
       if any((lead_0_obstacle - get_safe_obstacle_distance(self.x_sol[:,1], t_follow, stop_distance)) - self.x_sol[:,0] < 0.0):
         self.source = 'lead0'
       if any((lead_1_obstacle - get_safe_obstacle_distance(self.x_sol[:,1], t_follow, stop_distance)) - self.x_sol[:,0] < 0.0) and \
-         (lead_1_obstacle[0] - lead_0_obstacle[0]):
+         (lead_1_obstacle[0] - lead_0_obstacle[0]) < 0:
         self.source = 'lead1'
 
   def run(self):
