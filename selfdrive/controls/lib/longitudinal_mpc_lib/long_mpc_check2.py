@@ -100,6 +100,17 @@ def get_dynamic_follow(v_ego, personality=log.LongitudinalPersonality.standard):
     raise NotImplementedError("Dynamic Follow personality not supported")
   return np.interp(v_ego, x_vel, y_dist)
 
+def get_adaptive_T_FOLLOW(v_ego, a_lead, personality=log.LongitudinalPersonality.standard):
+  # 基本 T_FOLLOW
+  base_t_follow = get_T_FOLLOW(personality)
+
+  # 當前車有明顯減速時，額外增加安全距離
+  if a_lead < -0.5:
+    # 增加最多 0.5 秒追車時距，視前車減速度線性調整
+    extra_t_follow = np.clip(-0.3 * a_lead, 0.0, 0.5)
+    base_t_follow += extra_t_follow
+
+  return base_t_follow
 
 def get_STOP_DISTANCE(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
@@ -392,7 +403,9 @@ class LongitudinalMpc:
 
   def update(self, radarstate, v_cruise, x, v, a, j, personality=log.LongitudinalPersonality.standard, dynamic_follow=False):
     v_ego = self.x0[1]
-    t_follow = get_dynamic_follow(v_ego, personality) if dynamic_follow else get_T_FOLLOW(personality)
+    #t_follow = get_dynamic_follow(v_ego, personality) if dynamic_follow else get_T_FOLLOW(personality)
+    a_lead0 = np.nan_to_num(radarstate.leadOne.aLeadK, nan=0.0) if radarstate.leadOne.status else 0.0
+    t_follow = get_adaptive_T_FOLLOW(v_ego, a_lead0, personality)
     stop_distance = get_STOP_DISTANCE(personality)
 
     if self.params_store.get_bool("ToyotaTune") and not (self.CP.flags & ToyotaFlags.SMART_DSU):
