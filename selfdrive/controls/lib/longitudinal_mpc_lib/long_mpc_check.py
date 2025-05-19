@@ -277,6 +277,7 @@ class LongitudinalMpc:
     self.mode = mode
     self.dt = dt
     self.solver = AcadosOcpSolverCython(MODEL_NAME, ACADOS_SOLVER_TYPE, N)
+    self.params_store = Params()
     self.reset()
     self.source = SOURCES[2]
 
