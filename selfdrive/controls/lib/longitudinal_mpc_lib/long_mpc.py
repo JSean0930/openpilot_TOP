@@ -254,7 +254,7 @@ def gen_long_ocp():
 
   x0 = np.zeros(X_DIM)
   ocp.constraints.x0 = x0
-  ocp.parameter_values = np.array([-1.2, 1.2, 0.0, 0.0, get_T_FOLLOW(v_ego, v_lead, a_lead, personality), LEAD_DANGER_FACTOR, get_STOP_DISTANCE()])
+  ocp.parameter_values = np.array([-1.2, 1.2, 0.0, 0.0, 1.25, LEAD_DANGER_FACTOR, 5.0])
 
 
   # We put all constraint cost weights to 0 and only set them at runtime
