@@ -506,7 +506,7 @@ def update(self, radarstate, v_cruise, x, v, a, j, personality=log.LongitudinalP
     self.a_solution = self.x_sol[:,2]
     self.j_solution = self.u_sol[:,0]
 
-    self.prev_a = np.interp(T_IDXS + self.dt, T_IDXS, self.a_solution)
+    self.prev_a = np.interp(T_IDXS + self.dt, T_IDXS, self.a_solution, left=self.a_solution[0], right=self.a_solution[-1])
 
     t = time.monotonic()
     if self.solution_status != 0:
