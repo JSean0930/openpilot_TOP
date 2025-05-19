@@ -74,15 +74,35 @@ def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
     raise NotImplementedError("Longitudinal personality not supported")
 
 
-def get_T_FOLLOW(personality=log.LongitudinalPersonality.standard):
-  if personality==log.LongitudinalPersonality.relaxed:
-    return 1.45
-  elif personality==log.LongitudinalPersonality.standard:
-    return 1.35
-  elif personality==log.LongitudinalPersonality.aggressive:
-    return 1.25
+def get_T_FOLLOW(v_ego, v_lead, a_lead, personality=log.LongitudinalPersonality.standard):
+  # 1. 設定 personality 基礎值
+  if personality == log.LongitudinalPersonality.relaxed:
+    min_dist = 1.2
+    max_dist = 1.6
+  elif personality == log.LongitudinalPersonality.standard:
+    min_dist = 1.1
+    max_dist = 1.5
+  elif personality == log.LongitudinalPersonality.aggressive:
+    min_dist = 1.0
+    max_dist = 1.4
   else:
     raise NotImplementedError("Longitudinal personality not supported")
+
+  # 2. 基礎速度 sigmoid 平滑調整
+  v_scale = 10.0
+  k = 0.3
+  ratio = 1 / (1 + np.exp(-k * (v_ego - v_scale)))
+  base_t_follow = min_dist + (max_dist - min_dist) * ratio
+
+  # 3. 依速差與前車減速進一步微調
+  delta_v = v_lead - v_ego
+  delta_v_adj = np.clip(delta_v * 0.05, -0.3, 0.5)
+  a_lead_adj = np.clip(-a_lead * 0.1, 0.0, 0.3)
+
+  # 4. 合成調整後的 T_FOLLOW 時距
+  t_follow = base_t_follow + delta_v_adj + a_lead_adj
+
+  return t_follow
 
 
 def get_dynamic_follow(v_ego, personality=log.LongitudinalPersonality.standard):
@@ -384,10 +404,10 @@ class LongitudinalMpc:
     lead_xv = self.extrapolate_lead(x_lead, v_lead, a_lead, a_lead_tau)
     return lead_xv
 
-def update(self, radarstate, v_cruise, x, v, a, j, personality=log.LongitudinalPersonality.standard, dynamic_follow=False):
-  t_follow = get_T_FOLLOW(personality)
+def update(self, radarstate, v_cruise, x, v, a, j, v_ego, v_lead, a_lead, personality=log.LongitudinalPersonality.standard, dynamic_follow=False):
+  t_follow = get_T_FOLLOW(v_ego, v_lead, a_lead, personality)
   v_ego = self.x0[1]
-  t_follow = get_T_FOLLOW(personality) if not dynamic_follow else get_dynamic_follow(v_ego, personality)
+  t_follow = get_T_FOLLOW(v_ego, v_lead, a_lead, personality) if not dynamic_follow else get_dynamic_follow(v_ego, personality)
   stop_distance = get_STOP_DISTANCE(personality)
 
   if Params().get_bool("ToyotaTune") and not (self.CP.flags & ToyotaFlags.SMART_DSU):
