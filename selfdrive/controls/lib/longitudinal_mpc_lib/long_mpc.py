@@ -404,96 +404,94 @@ class LongitudinalMpc:
     lead_xv = self.extrapolate_lead(x_lead, v_lead, a_lead, a_lead_tau)
     return lead_xv
 
-def update(self, radarstate, v_cruise, x, v, a, j, v_ego, v_lead, a_lead, personality=log.LongitudinalPersonality.standard, dynamic_follow=False):
-  v_ego = self.x0[1]
-  t_follow = get_dynamic_follow(v_ego, personality) if dynamic_follow else get_T_FOLLOW(v_ego, v_lead, a_lead, personality)
-  stop_distance = get_STOP_DISTANCE(personality)
+  def update(self, radarstate, v_cruise, x, v, a, j, v_ego, v_lead, a_lead, personality=log.LongitudinalPersonality.standard, dynamic_follow=False):
+    v_ego = self.x0[1]
+    t_follow = get_dynamic_follow(v_ego, personality) if dynamic_follow else get_T_FOLLOW(v_ego, v_lead, a_lead, personality)
+    stop_distance = get_STOP_DISTANCE(personality)
 
-  if Params().get_bool("ToyotaTune") and not (self.CP.flags & ToyotaFlags.SMART_DSU):
-    stop_distance += 3.0
+    if Params().get_bool("ToyotaTune") and not (self.CP.flags & ToyotaFlags.SMART_DSU):
+      stop_distance += 3.0
 
-  self.status = radarstate.leadOne.status or radarstate.leadTwo.status
+    self.status = radarstate.leadOne.status or radarstate.leadTwo.status
 
-  lead_xv_0 = self.process_lead(radarstate.leadOne)
-  lead_xv_1 = self.process_lead(radarstate.leadTwo)
+    lead_xv_0 = self.process_lead(radarstate.leadOne)
+    lead_xv_1 = self.process_lead(radarstate.leadTwo)
 
-  lead_0_obstacle = lead_xv_0[:,0] + get_stopped_equivalence_factor(lead_xv_0[:,1], v_ego)
-  lead_1_obstacle = lead_xv_1[:,0] + get_stopped_equivalence_factor(lead_xv_1[:,1], v_ego)
+    lead_0_obstacle = lead_xv_0[:,0] + get_stopped_equivalence_factor(lead_xv_0[:,1], v_ego)
+    lead_1_obstacle = lead_xv_1[:,0] + get_stopped_equivalence_factor(lead_xv_1[:,1], v_ego)
 
-  self.params[:,0] = ACCEL_MIN
-  self.params[:,1] = ACCEL_MAX
+    self.params[:,0] = ACCEL_MIN
+    self.params[:,1] = ACCEL_MAX
 
-  if self.mode == 'acc':
-    self.params[:,5] = LEAD_DANGER_FACTOR * 0.8
+    if self.mode == 'acc':
+      self.params[:,5] = LEAD_DANGER_FACTOR * 0.8
+      v_lower = v_ego + (T_IDXS * CRUISE_MIN_ACCEL * 0.95)
+      v_upper = v_ego + (T_IDXS * CRUISE_MAX_ACCEL * 0.9)
+      v_cruise_clipped = np.clip(v_cruise * np.ones(N+1), v_lower, v_upper)
+      cruise_obstacle = np.cumsum(T_DIFFS * v_cruise_clipped) + get_safe_obstacle_distance(v_cruise_clipped, t_follow, stop_distance)
+      x_obstacles = np.column_stack([lead_0_obstacle, lead_1_obstacle, cruise_obstacle])
+      self.source = SOURCES[np.argmin(x_obstacles[0])]
 
-    v_lower = v_ego + (T_IDXS * CRUISE_MIN_ACCEL * 0.95)
-    v_upper = v_ego + (T_IDXS * CRUISE_MAX_ACCEL * 0.9)
-    v_cruise_clipped = np.clip(v_cruise * np.ones(N+1), v_lower, v_upper)
-    cruise_obstacle = np.cumsum(T_DIFFS * v_cruise_clipped) + get_safe_obstacle_distance(v_cruise_clipped, t_follow, stop_distance)
-    x_obstacles = np.column_stack([lead_0_obstacle, lead_1_obstacle, cruise_obstacle])
-    self.source = SOURCES[np.argmin(x_obstacles[0])]
+      x[:], v[:], a[:], j[:] = 0.0, 0.0, 0.0, 0.0
 
-    x[:], v[:], a[:], j[:] = 0.0, 0.0, 0.0, 0.0
+    elif self.mode == 'blended':
+      self.params[:,5] = 1.0
+      x_obstacles = np.column_stack([lead_0_obstacle, lead_1_obstacle])
 
-  elif self.mode == 'blended':
-    self.params[:,5] = 1.0
+      cruise_target = T_IDXS * np.clip(v_cruise * 1.0, v_ego - 2.0, 1e3) + x[0]
+      xforward = ((v[1:] + v[:-1]) / 2) * (T_IDXS[1:] - T_IDXS[:-1])
+      x_e2e = np.cumsum(np.insert(xforward, 0, x[0])) * 0.95
 
-    x_obstacles = np.column_stack([lead_0_obstacle, lead_1_obstacle])
+      v_low, v_high = 5.0, 15.0
+      w = np.clip((v_ego - v_low) / (v_high - v_low), 0.0, 1.0)
+      x_mixed = (1 - w) * np.minimum(x_e2e, cruise_target) + w * np.maximum(x_e2e, cruise_target)
+      x[:] = x_mixed  # 修正此行
 
-    cruise_target = T_IDXS * np.clip(v_cruise * 1.0, v_ego - 2.0, 1e3) + x[0]
-    xforward = ((v[1:] + v[:-1]) / 2) * (T_IDXS[1:] - T_IDXS[:-1])
-    x_e2e = np.cumsum(np.insert(xforward, 0, x[0])) * 0.95
+      self.yref[:,1] = x
+      self.yref[:,2] = v
+      self.yref[:,3] = a
+      self.yref[:,5] = j
+      for i in range(N):
+        self.solver.set(i, "yref", self.yref[i])
+      self.solver.set(N, "yref", self.yref[N][:COST_E_DIM])
 
-    v_low, v_high = 5.0, 15.0
-    w = np.clip((v_ego - v_low) / (v_high - v_low), 0.0, 1.0)
-    x_mixed = (1 - w) * np.minimum(x_e2e, cruise_target) + w * np.maximum(x_e2e, cruise_target)
-    x[:] = x_mixed
-
-    self.yref[:,1] = x
-    self.yref[:,2] = v
-    self.yref[:,3] = a
-    self.yref[:,5] = j
-    for i in range(N):
-      self.solver.set(i, "yref", self.yref[i])
-    self.solver.set(N, "yref", self.yref[N][:COST_E_DIM])
-
-    e2e_dist = x_e2e[1]
-    cruise_dist = cruise_target[1]
-    if self.source == 'e2e':
-      self.source = 'e2e' if e2e_dist > cruise_dist * 0.95 else 'cruise'
+      e2e_dist = x_e2e[1]
+      cruise_dist = cruise_target[1]
+      if self.source == 'e2e':
+        self.source = 'e2e' if e2e_dist > cruise_dist * 0.95 else 'cruise'
+      else:
+        self.source = 'e2e' if e2e_dist > cruise_dist * 1.05 else 'cruise'
     else:
-      self.source = 'e2e' if e2e_dist > cruise_dist * 1.05 else 'cruise'
-  else:
-    raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner update')
+      raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner update')
 
-  # yref 更新僅限非 blended 模式，避免重複設定
-  if self.mode != 'blended':
-    self.yref[:,1] = x
-    self.yref[:,2] = v
-    self.yref[:,3] = a
-    self.yref[:,5] = j
-    for i in range(N):
-      self.solver.set(i, "yref", self.yref[i])
-    self.solver.set(N, "yref", self.yref[N][:COST_E_DIM])
+    if self.mode != 'blended':
+      self.yref[:,1] = x
+      self.yref[:,2] = v
+      self.yref[:,3] = a
+      self.yref[:,5] = j
+      for i in range(N):
+        self.solver.set(i, "yref", self.yref[i])
+      self.solver.set(N, "yref", self.yref[N][:COST_E_DIM])
 
-  self.params[:,2] = np.min(x_obstacles, axis=1)
-  self.params[:,3] = np.copy(self.prev_a)
-  self.params[:,4] = t_follow
-  self.params[:,6] = stop_distance
+    self.params[:,2] = np.min(x_obstacles, axis=1)
+    self.params[:,3] = np.copy(self.prev_a)
+    self.params[:,4] = t_follow
+    self.params[:,6] = stop_distance
 
-  self.run()
-  if (np.any(lead_xv_0[FCW_IDXS,0] - self.x_sol[FCW_IDXS,0] < CRASH_DISTANCE) and
-          radarstate.leadOne.modelProb > 0.9):
-    self.crash_cnt += 1
-  else:
-    self.crash_cnt = 0
+    self.run()
 
-  if self.mode == 'blended':
-    if any((lead_0_obstacle - get_safe_obstacle_distance(self.x_sol[:,1], t_follow, stop_distance)) - self.x_sol[:,0] < 0.0):
-      self.source = 'lead0'
-    if any((lead_1_obstacle - get_safe_obstacle_distance(self.x_sol[:,1], t_follow, stop_distance)) - self.x_sol[:,0] < 0.0) and \
-       (lead_1_obstacle[0] - lead_0_obstacle[0]):
-      self.source = 'lead1'
+    if (np.any(lead_xv_0[FCW_IDXS,0] - self.x_sol[FCW_IDXS,0] < CRASH_DISTANCE) and
+            radarstate.leadOne.modelProb > 0.9):
+      self.crash_cnt += 1
+    else:
+      self.crash_cnt = 0
+
+    if self.mode == 'blended':
+      if any((lead_0_obstacle - get_safe_obstacle_distance(self.x_sol[:,1], t_follow, stop_distance)) - self.x_sol[:,0] < 0.0):
+        self.source = 'lead0'
+      if any((lead_1_obstacle - get_safe_obstacle_distance(self.x_sol[:,1], t_follow, stop_distance)) - self.x_sol[:,0] < 0.0) and \
+         (lead_1_obstacle[0] - lead_0_obstacle[0]):
+        self.source = 'lead1'
 
   def run(self):
     # t0 = time.monotonic()
