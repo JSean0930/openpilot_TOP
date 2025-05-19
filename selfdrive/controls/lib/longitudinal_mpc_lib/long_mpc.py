@@ -447,7 +447,7 @@ def update(self, radarstate, v_cruise, x, v, a, j, v_ego, v_lead, a_lead, person
     v_low, v_high = 5.0, 15.0
     w = np.clip((v_ego - v_low) / (v_high - v_low), 0.0, 1.0)
     x_mixed = (1 - w) * np.minimum(x_e2e, cruise_target) + w * np.maximum(x_e2e, cruise_target)
-    x = x_mixed
+    x[:] = x_mixed
 
     self.yref[:,1] = x
     self.yref[:,2] = v
