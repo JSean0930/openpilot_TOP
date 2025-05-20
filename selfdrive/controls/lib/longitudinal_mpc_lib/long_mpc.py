@@ -39,7 +39,7 @@ X_EGO_COST = 1.0  # 增加以提升車距追蹤精度
 V_EGO_COST = 1.0  # 適度權重於自車速度
 A_EGO_COST = 1.0  # 對加速度施加小懲罰以平滑動作曲線, 0.75
 J_EGO_COST = 3.0  # 降低 jerk 懲罰以提高反應靈敏度
-A_CHANGE_COST = 150.  # 降低以提供更大加速自由度
+A_CHANGE_COST = 175.  # 降低以提供更大加速自由度, 150
 DANGER_ZONE_COST = 100.
 CRASH_DISTANCE = .25
 LEAD_DANGER_FACTOR = 0.75
@@ -80,7 +80,7 @@ def get_T_FOLLOW(personality=log.LongitudinalPersonality.standard):
   elif personality==log.LongitudinalPersonality.standard:
     return 1.25
   elif personality==log.LongitudinalPersonality.aggressive:
-    return 1.15
+    return 1.0
   else:
     raise NotImplementedError("Longitudinal personality not supported")
 
