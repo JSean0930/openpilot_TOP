@@ -381,7 +381,7 @@ class LongitudinalMpc:
       for i in range(N+1):
         self.solver.set(i, 'x', self.x0)
 
-  @staticmethod
+  #@staticmethod
   def extrapolate_lead(self, x_lead, v_lead, a_lead, a_lead_tau):
     #a_lead_traj = a_lead * np.exp(-T_IDXS / a_lead_tau)
     # EMA 滤波
