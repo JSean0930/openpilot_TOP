@@ -297,6 +297,11 @@ class LongitudinalMpc:
     self.dt = dt
     self.solver = AcadosOcpSolverCython(MODEL_NAME, ACADOS_SOLVER_TYPE, N)
     self.params_store = Params()
+    
+    # —— 新增，用于对前车加速度做 EMA 滤波 和 jerk 限制 ——  
+    self.a_lead_filt = 0.0
+    self.a_lead_prev = 0.0
+    
     self.reset()
     self.source = SOURCES[2]
 
@@ -377,9 +382,23 @@ class LongitudinalMpc:
         self.solver.set(i, 'x', self.x0)
 
   @staticmethod
-  def extrapolate_lead(x_lead, v_lead, a_lead, a_lead_tau):
-    #a_lead_traj = a_lead * np.exp(-a_lead_tau * (T_IDXS**2)/2.)
-    a_lead_traj = a_lead * np.exp(-T_IDXS / a_lead_tau)
+  def extrapolate_lead(self, x_lead, v_lead, a_lead, a_lead_tau):
+    #a_lead_traj = a_lead * np.exp(-T_IDXS / a_lead_tau)
+    # EMA 滤波
+    alpha = 0.2
+    self.a_lead_filt = alpha * a_lead + (1 - alpha) * self.a_lead_filt
+
+    # jerk 限制
+    max_jerk = 5.0
+    da = self.a_lead_filt - self.a_lead_prev
+    da = np.clip(da, -max_jerk * DT_MDL, max_jerk * DT_MDL)
+    a_input = self.a_lead_prev + da
+    self.a_lead_prev = a_input
+
+    # 线性衰减
+    tau_eff = np.clip(a_lead_tau, 0.5, 2.0)
+    a_lead_traj = a_input * np.maximum(0.0, 1.0 - T_IDXS / tau_eff)
+    
     v_lead_traj = np.clip(v_lead + np.cumsum(T_DIFFS * a_lead_traj), 0.0, 1e8)
     x_lead_traj = x_lead + np.cumsum(T_DIFFS * v_lead_traj)
     lead_xv = np.column_stack((x_lead_traj, v_lead_traj))
