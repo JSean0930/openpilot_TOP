@@ -106,7 +106,7 @@ def get_adaptive_T_FOLLOW(v_ego, a_lead, personality=log.LongitudinalPersonality
 
   # 2. 隨車速線性增加的時距
   #    0 m/s -> +0 s, 33 m/s -> +0.5 s
-  K_SPEED = 0.2 / 33.0     # 每 1 m/s 約增加 0.006 s
+  K_SPEED = 0.6 / 33.0     # 每 1 m/s 約增加
   extra_speed_t = np.clip(K_SPEED * v_ego, 0.0, 0.5)
   base_t_follow += extra_speed_t
   
