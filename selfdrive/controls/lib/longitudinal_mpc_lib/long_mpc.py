@@ -151,7 +151,7 @@ def get_safe_obstacle_distance(v_ego, t_follow, stop_distance=None):
 
 def desired_follow_distance(v_ego, v_lead, a_lead, t_follow=None, stop_distance=None):
   if t_follow is None:
-    t_follow = get_adaptive_T_FOLLOW()
+    t_follow = get_adaptive_T_FOLLOW(v_ego, a_lead, personality)
   if stop_distance is None:
     stop_distance = get_STOP_DISTANCE()
   return get_safe_obstacle_distance(v_ego, t_follow, stop_distance) - get_stopped_equivalence_factor(v_lead, v_ego)
