@@ -37,7 +37,7 @@ CONSTR_DIM = 4
 X_EGO_OBSTACLE_COST = 2. # 降低避障成本以避免過於保守
 X_EGO_COST = 1.0  # 增加以提升車距追蹤精度
 V_EGO_COST = 1.0  # 適度權重於自車速度
-A_EGO_COST = 0.75  # 對加速度施加小懲罰以平滑動作曲線, 0.5
+A_EGO_COST = 1.0  # 對加速度施加小懲罰以平滑動作曲線, 0.75
 J_EGO_COST = 3.0  # 降低 jerk 懲罰以提高反應靈敏度
 A_CHANGE_COST = 150.  # 降低以提供更大加速自由度
 DANGER_ZONE_COST = 100.
@@ -76,11 +76,11 @@ def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
 
 def get_T_FOLLOW(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
-    return 1.45
-  elif personality==log.LongitudinalPersonality.standard:
     return 1.35
-  elif personality==log.LongitudinalPersonality.aggressive:
+  elif personality==log.LongitudinalPersonality.standard:
     return 1.25
+  elif personality==log.LongitudinalPersonality.aggressive:
+    return 1.15
   else:
     raise NotImplementedError("Longitudinal personality not supported")
 
@@ -106,12 +106,12 @@ def get_adaptive_T_FOLLOW(v_ego, a_lead, personality=log.LongitudinalPersonality
 
   # 2. 隨車速線性增加的時距
   #    0 m/s -> +0 s, 33 m/s -> +0.5 s
-  K_SPEED = 0.6 / 33.0     # 每 1 m/s 約增加
-  extra_speed_t = np.clip(K_SPEED * v_ego, 0.0, 0.5)
+  K_SPEED = 0.7 / 33.0     # 每 1 m/s 約增加
+  extra_speed_t = np.clip(K_SPEED * v_ego, 0.0, 1.0)
   base_t_follow += extra_speed_t
   
   # 當前車有明顯減速時，額外增加安全距離, -0.5m/s^2
-  if a_lead < -0.25:
+  if a_lead < -0.5:
     # 增加最多 0.5 秒追車時距，視前車減速度線性調整
     extra_t_follow = np.clip(-0.3 * a_lead, 0.0, 0.5)
     base_t_follow += extra_t_follow
@@ -490,9 +490,9 @@ class LongitudinalMpc:
       e2e_dist = x_e2e[1]
       cruise_dist = cruise_target[1]
       if self.source == 'e2e':
-        self.source = 'e2e' if e2e_dist > cruise_dist * 0.95 else 'cruise'
+        self.source = 'e2e' if e2e_dist > cruise_dist * 0.9 else 'cruise'
       else:
-        self.source = 'e2e' if e2e_dist > cruise_dist * 1.05 else 'cruise'
+        self.source = 'e2e' if e2e_dist > cruise_dist * 1.1 else 'cruise'
     else:
       raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner update')
 
