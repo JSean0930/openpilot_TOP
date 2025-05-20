@@ -104,6 +104,12 @@ def get_adaptive_T_FOLLOW(v_ego, a_lead, personality=log.LongitudinalPersonality
   # 基本 T_FOLLOW
   base_t_follow = get_T_FOLLOW(personality)
 
+  # 2. 隨車速線性增加的時距
+  #    0 m/s -> +0 s, 33 m/s -> +0.5 s
+  K_SPEED = 0.2 / 33.0     # 每 1 m/s 約增加 0.015 s
+  extra_speed_t = np.clip(K_SPEED * v_ego, 0.0, 0.5)
+  base_t_follow += extra_speed_t
+  
   # 當前車有明顯減速時，額外增加安全距離, -0.5m/s^2
   if a_lead < -0.25:
     # 增加最多 0.5 秒追車時距，視前車減速度線性調整
@@ -226,6 +232,7 @@ def gen_long_ocp():
   # from an obstacle at every timestep. This obstacle can be a lead car
   # or other object. In e2e mode we can use x_position targets as a cost
   # instead.
+  
   costs = [((x_obstacle - x_ego) - (desired_dist_comfort)) / (v_ego + 10.),
            x_ego,
            v_ego,
@@ -455,7 +462,7 @@ class LongitudinalMpc:
       self.yref[:,3] = a
       self.yref[:,5] = j
       for i in range(N):
-        self.solver.set(i, "yref", self.yref[i])
+      self.solver.set(i, "yref", self.yref[i])
       self.solver.set(N, "yref", self.yref[N][:COST_E_DIM])
 
       e2e_dist = x_e2e[1]
