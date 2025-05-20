@@ -298,6 +298,9 @@ class LongitudinalMpc:
     self.solver = AcadosOcpSolverCython(MODEL_NAME, ACADOS_SOLVER_TYPE, N)
     self.params_store = Params()
     
+    # —— 保留原有，用于 cost 中的 a_ego – prev_a ——  
+    self.prev_a = np.zeros(N+1)
+
     # —— 新增，用于对前车加速度做 EMA 滤波 和 jerk 限制 ——  
     self.a_lead_filt = 0.0
     self.a_lead_prev = 0.0
@@ -381,8 +384,8 @@ class LongitudinalMpc:
       for i in range(N+1):
         self.solver.set(i, 'x', self.x0)
 
-  #@staticmethod
-  def extrapolate_lead(self, x_lead, v_lead, a_lead, a_lead_tau):
+  @staticmethod
+  def extrapolate_lead(x_lead, v_lead, a_lead, a_lead_tau):
     #a_lead_traj = a_lead * np.exp(-T_IDXS / a_lead_tau)
     # EMA 滤波
     alpha = 0.2
