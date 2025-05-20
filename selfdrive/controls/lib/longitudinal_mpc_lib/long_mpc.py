@@ -424,7 +424,7 @@ class LongitudinalMpc:
     v_lead = np.clip(v_lead, 0.0, 1e8)
     a_lead = np.clip(a_lead, -10., 5.)
 
-    lead_xv = self.extrapolate_lead(self, x_lead, v_lead, a_lead, a_lead_tau)
+    lead_xv = self.extrapolate_lead(x_lead, v_lead, a_lead, a_lead_tau)
     return lead_xv
 
   def update(self, radarstate, v_cruise, x, v, a, j, personality=log.LongitudinalPersonality.standard, dynamic_follow=False):
