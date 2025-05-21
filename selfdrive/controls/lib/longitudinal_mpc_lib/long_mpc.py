@@ -448,8 +448,8 @@ class LongitudinalMpc:
     lead_xv_0 = self.process_lead(radarstate.leadOne)
     lead_xv_1 = self.process_lead(radarstate.leadTwo)
 
-    lead_0_obstacle = lead_xv_0[:,0] + get_safe_obstacle_distance(lead_xv_0[:,1], t_follow_0, stop_distance)
-    lead_1_obstacle = lead_xv_1[:,0] + get_safe_obstacle_distance(lead_xv_1[:,1], t_follow_1, stop_distance)
+    lead_0_obstacle = lead_xv_0[:,0] + get_stopped_equivalence_factor(lead_xv_0[:,1], v_ego
+    lead_1_obstacle = lead_xv_1[:,0+ get_stopped_equivalence_factor(lead_xv_1[:,1], v_ego)
 
     self.params[:,0] = ACCEL_MIN
     self.params[:,1] = ACCEL_MAX
@@ -479,7 +479,7 @@ class LongitudinalMpc:
       v_low, v_high = 5.0, 15.0
       w = np.clip((v_ego - v_low) / (v_high - v_low), 0.0, 1.0)
       x_mixed = (1 - w) * np.minimum(x_e2e, cruise_target) + w * np.maximum(x_e2e, cruise_target)
-      x[:] = x_mixed  # 修正此行
+      #x[:] = x_mixed  # 修正此行
 
       self.yref[:,1] = x
       self.yref[:,2] = v
