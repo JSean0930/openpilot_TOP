@@ -411,9 +411,9 @@ class LongitudinalMpc:
     v_ego = self.x0[1]
     if lead is not None and lead.status:
       x_lead = lead.dRel
-      v_lead = np.nan_to_num(lead.vLead, nan=0.0)
-      a_lead = np.nan_to_num(lead.aLeadK, nan=0.0)
-      a_lead_tau = np.nan_to_num(lead.aLeadTau, nan=_LEAD_ACCEL_TAU)
+      v_lead = lead.vLead
+      a_lead = lead.aLeadK
+      a_lead_tau = lead.aLeadTau
     else:
       # Fake a fast lead car, so MPC can keep running in the same mode
       x_lead = 50.0
@@ -478,7 +478,7 @@ class LongitudinalMpc:
       v_low, v_high = 5.0, 15.0
       w = np.clip((v_ego - v_low) / (v_high - v_low), 0.0, 1.0)
       x_mixed = (1 - w) * np.minimum(x_e2e, cruise_target) + w * np.maximum(x_e2e, cruise_target)
-      #x[:] = x_mixed  # 修正此行
+      x[:] = x_mixed  # 修正此行
 
       self.yref[:,1] = x
       self.yref[:,2] = v
@@ -490,8 +490,10 @@ class LongitudinalMpc:
 
       e2e_dist = x_e2e[1]
       cruise_dist = cruise_target[1]
-      
-      self.source = 'e2e' if e2e_dist > cruise_dist * 0.9 else 'cruise'
+      if self.source == 'e2e':
+        self.source = 'e2e' if e2e_dist > cruise_dist * 0.9 else 'cruise'
+      else:
+        self.source = 'e2e' if e2e_dist > cruise_dist * 1.1 else 'cruise'
     else:
       raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner update')
 
