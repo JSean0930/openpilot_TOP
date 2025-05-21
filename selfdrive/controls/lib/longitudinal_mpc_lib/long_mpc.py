@@ -76,9 +76,9 @@ def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
 
 def get_T_FOLLOW(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
-    return 1.35
-  elif personality==log.LongitudinalPersonality.standard:
     return 1.25
+  elif personality==log.LongitudinalPersonality.standard:
+    return 1.15
   elif personality==log.LongitudinalPersonality.aggressive:
     return 1.0
   else:
@@ -106,7 +106,7 @@ def get_adaptive_T_FOLLOW(v_ego, a_lead, personality=log.LongitudinalPersonality
 
   # 2. 隨車速線性增加的時距
   #    0 m/s -> +0 s, 33 m/s -> +0.5 s
-  K_SPEED = 0.7 / 33.0     # 每 1 m/s 約增加
+  K_SPEED = 0.8 / 33.0     # 每 1 m/s 約增加
   extra_speed_t = np.clip(K_SPEED * v_ego, 0.0, 1.0)
   base_t_follow += extra_speed_t
   
