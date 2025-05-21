@@ -436,8 +436,8 @@ class LongitudinalMpc:
     a_lead1 = np.nan_to_num(radarstate.leadTwo.aLeadK, nan=0.0) if radarstate.leadTwo.status else 0.0
     a_lead_min = min(a_lead0, a_lead1)
     t_follow = get_adaptive_T_FOLLOW(v_ego, a_lead_min, personality)
-    t_follow_0 = get_adaptive_T_FOLLOW(v_ego, a_lead0, personality)
-    t_follow_1 = get_adaptive_T_FOLLOW(v_ego, a_lead1, personality)
+    #t_follow_0 = get_adaptive_T_FOLLOW(v_ego, a_lead0, personality)
+    #t_follow_1 = get_adaptive_T_FOLLOW(v_ego, a_lead1, personality)
     stop_distance = get_STOP_DISTANCE(personality)
 
     if self.params_store.get_bool("ToyotaTune") and not (self.CP.flags & ToyotaFlags.SMART_DSU):
@@ -449,8 +449,7 @@ class LongitudinalMpc:
     lead_xv_1 = self.process_lead(radarstate.leadTwo)
 
     lead_0_obstacle = lead_xv_0[:,0] + get_stopped_equivalence_factor(lead_xv_0[:,1], v_ego
-    lead_1_obstacle = lead_xv_1[:,0+ get_stopped_equivalence_factor(lead_xv_1[:,1], v_ego)
-
+    lead_1_obstacle = lead_xv_1[:,0] + get_stopped_equivalence_factor(lead_xv_1[:,1], v_ego)
     self.params[:,0] = ACCEL_MIN
     self.params[:,1] = ACCEL_MAX
 
