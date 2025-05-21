@@ -491,10 +491,8 @@ class LongitudinalMpc:
 
       e2e_dist = x_e2e[1]
       cruise_dist = cruise_target[1]
-      if self.source == 'e2e':
-        self.source = 'e2e' if e2e_dist > cruise_dist * 0.9 else 'cruise'
-      else:
-        self.source = 'e2e' if e2e_dist > cruise_dist * 1.1 else 'cruise'
+      
+      self.source = 'e2e' if e2e_dist > cruise_dist * 0.9 else 'cruise'
     else:
       raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner update')
 
