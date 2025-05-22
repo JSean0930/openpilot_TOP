@@ -454,7 +454,7 @@ class LongitudinalMpc:
     self.params[:,1] = ACCEL_MAX
 
     if self.mode == 'acc':
-      self.params[:,5] = LEAD_DANGER_FACTOR * 0.8
+      self.params[:,5] = LEAD_DANGER_FACTOR
       v_lower = v_ego + (T_IDXS * CRUISE_MIN_ACCEL * 0.95)
       v_upper = v_ego + (T_IDXS * CRUISE_MAX_ACCEL * 0.9)
       v_cruise_clipped = np.clip(v_cruise * np.ones(N+1), v_lower, v_upper)
