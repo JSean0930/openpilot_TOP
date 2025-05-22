@@ -149,7 +149,7 @@ def get_safe_obstacle_distance(v_ego, t_follow, stop_distance=None):
     stop_distance = get_STOP_DISTANCE()
   return (v_ego**2) / (2 * COMFORT_BRAKE) + t_follow * v_ego + stop_distance
 
-def desired_follow_distance(v_ego, v_lead, a_lead, t_follow=None, stop_distance=None):
+def desired_follow_distance(v_ego, v_lead, a_lead, t_follow=None, stop_distance=None, personality=log.LongitudinalPersonality.standard):
   if t_follow is None:
     t_follow = get_adaptive_T_FOLLOW(v_ego, a_lead, personality)
   if stop_distance is None:
