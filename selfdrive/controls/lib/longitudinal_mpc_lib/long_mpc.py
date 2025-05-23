@@ -120,11 +120,11 @@ def get_adaptive_T_FOLLOW(v_ego, a_lead, personality=log.LongitudinalPersonality
 
 def get_STOP_DISTANCE(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
-    return 5.0
+    return 8.0
   elif personality==log.LongitudinalPersonality.standard:
-    return 5.0
+    return 9.0
   elif personality==log.LongitudinalPersonality.aggressive:
-    return 5.0
+    return 10.0
   else:
     raise NotImplementedError("Longitudinal personality not supported")
 
