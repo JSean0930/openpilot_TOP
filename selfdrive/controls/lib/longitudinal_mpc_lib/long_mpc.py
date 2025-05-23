@@ -477,7 +477,11 @@ class LongitudinalMpc:
       # 混合 e2e 和 cruise，根據速度平滑插值
       v_low, v_high = 5.0, 15.0
       w = np.clip((v_ego - v_low) / (v_high - v_low), 0.0, 1.0)
-      x_mixed = w * np.minimum(x_e2e, cruise_target) + (1 - w) * np.maximum(x_e2e, cruise_target)
+
+      if v_ego >= v_high:
+        x_mixed = np.minimum(x_e2e, cruise_target)
+      else:
+        x_mixed = w * np.minimum(x_e2e, cruise_target) + (1 - w) * np.maximum(x_e2e, cruise_target)
       #x[:] = x_mixed  # 修正此行
       # 先算出带时距的“安全”lead 障碍
       lead_safe_0 = lead_xv_0[:,0] + get_safe_obstacle_distance(lead_xv_0[:,1], t_follow, stop_distance)
@@ -512,7 +516,8 @@ class LongitudinalMpc:
         self.solver.set(i, "yref", self.yref[i])
       self.solver.set(N, "yref", self.yref[N][:COST_E_DIM])
 
-    self.params[:,2] = np.min(x_obstacles, axis=1)
+    #self.params[:,2] = np.min(x_obstacles, axis=1)
+    self.params[:,2] = np.minimum(lead_safe_0, lead_safe_1)
     self.params[:,3] = np.copy(self.prev_a)
     self.params[:,4] = t_follow
     self.params[:,6] = stop_distance
