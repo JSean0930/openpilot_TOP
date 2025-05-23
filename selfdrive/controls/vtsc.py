@@ -10,8 +10,8 @@ from openpilot.common.params import Params
 
 params = Params()
 
-TARGET_LAT_A = 2.6  # m/s^2 2.3
-MIN_TARGET_V = 5.0  # m/s
+TARGET_LAT_A = 3.0  # m/s^2 2.6
+MIN_TARGET_V = 11.5  # m/s, 5.0
 HISTORY_LENGTH = 10  # number of past curvature samples to average
 SMOOTHING_ALPHA = 0.3  # for v_target exponential smoothing
 
