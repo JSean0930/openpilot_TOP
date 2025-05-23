@@ -516,8 +516,12 @@ class LongitudinalMpc:
         self.solver.set(i, "yref", self.yref[i])
       self.solver.set(N, "yref", self.yref[N][:COST_E_DIM])
 
+    if self.mode == 'acc':
+      self.params[:,2] = np.min(x_obstacles, axis=1)
+    elif self.mode == 'blended':
+      self.params[:,2] = np.minimum(lead_safe_0, lead_safe_1)
+      
     #self.params[:,2] = np.min(x_obstacles, axis=1)
-    self.params[:,2] = np.minimum(lead_safe_0, lead_safe_1)
     self.params[:,3] = np.copy(self.prev_a)
     self.params[:,4] = t_follow
     self.params[:,6] = stop_distance
