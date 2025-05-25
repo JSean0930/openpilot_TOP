@@ -37,9 +37,9 @@ CONSTR_DIM = 4
 X_EGO_OBSTACLE_COST = 2. # 降低避障成本以避免過於保守
 X_EGO_COST = 1.0  # 增加以提升車距追蹤精度
 V_EGO_COST = 1.0  # 適度權重於自車速度
-A_EGO_COST = 0.5  # 對加速度施加小懲罰以平滑動作曲線
+A_EGO_COST = 1.0  # 對加速度施加小懲罰以平滑動作曲線
 J_EGO_COST = 3.0  # 降低 jerk 懲罰以提高反應靈敏度
-A_CHANGE_COST = 150.  # 降低以提供更大加速自由度
+A_CHANGE_COST = 175.  # 降低以提供更大加速自由度
 DANGER_ZONE_COST = 100.
 CRASH_DISTANCE = .25
 LEAD_DANGER_FACTOR = 0.75
@@ -105,9 +105,9 @@ def get_STOP_DISTANCE(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
     return 6.0
   elif personality==log.LongitudinalPersonality.standard:
-    return 5.5
+    return 6.0
   elif personality==log.LongitudinalPersonality.aggressive:
-    return 5.5
+    return 6.0
   else:
     raise NotImplementedError("Longitudinal personality not supported")
 
