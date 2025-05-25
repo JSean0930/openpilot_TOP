@@ -490,14 +490,6 @@ class LongitudinalMpc:
       # clamp 掉任何小于安全距离的部分
       x[:] = np.maximum(x_mixed, lead_safe)
 
-      self.yref[:,1] = x
-      self.yref[:,2] = v
-      self.yref[:,3] = a
-      self.yref[:,5] = j
-      for i in range(N):
-        self.solver.set(i, "yref", self.yref[i])
-      self.solver.set(N, "yref", self.yref[N][:COST_E_DIM])
-
       e2e_dist = x_e2e[1]
       cruise_dist = cruise_target[1]
       if self.source == 'e2e':
