@@ -107,7 +107,7 @@ def get_STOP_DISTANCE(personality=log.LongitudinalPersonality.standard):
   elif personality==log.LongitudinalPersonality.standard:
     return 9.0
   elif personality==log.LongitudinalPersonality.aggressive:
-    return 10.0
+    return 6.0
   else:
     raise NotImplementedError("Longitudinal personality not supported")
 
@@ -126,16 +126,16 @@ def get_stopped_equivalence_factor(v_lead, v_ego):
     v_diff_offset = np.maximum(v_diff_offset * ((speed_to_reach_max_v_diff_offset - v_ego)/speed_to_reach_max_v_diff_offset), 0)
   return (v_lead**2) / (2 * COMFORT_BRAKE) + v_diff_offset
 
-def get_safe_obstacle_distance(v_ego, t_follow, stop_distance=None):
+def get_safe_obstacle_distance(v_ego, t_follow, stop_distance=None, personality=log.LongitudinalPersonality.standard):
   if stop_distance is None:
-    stop_distance = get_STOP_DISTANCE()
+    stop_distance = get_STOP_DISTANCE(personality)
   return (v_ego**2) / (2 * COMFORT_BRAKE) + t_follow * v_ego + stop_distance
 
-def desired_follow_distance(v_ego, v_lead, t_follow=None, stop_distance=None):
+def desired_follow_distance(v_ego, v_lead, t_follow=None, stop_distance=None, personality=log.LongitudinalPersonality.standard):
   if t_follow is None:
-    t_follow = get_T_FOLLOW()
+    t_follow = get_T_FOLLOW(personality)
   if stop_distance is None:
-    stop_distance = get_STOP_DISTANCE()
+    stop_distance = get_STOP_DISTANCE(personality)
   return get_safe_obstacle_distance(v_ego, t_follow, stop_distance) - get_stopped_equivalence_factor(v_lead, v_ego)
 
 
