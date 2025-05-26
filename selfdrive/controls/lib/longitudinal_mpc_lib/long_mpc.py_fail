@@ -120,11 +120,11 @@ def get_adaptive_T_FOLLOW(v_ego, a_lead, personality=log.LongitudinalPersonality
 
 def get_STOP_DISTANCE(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
-    return 9.0
+    return 6.0
   elif personality==log.LongitudinalPersonality.standard:
-    return 9.0
+    return 6.0
   elif personality==log.LongitudinalPersonality.aggressive:
-    return 10.0
+    return 6.0
   else:
     raise NotImplementedError("Longitudinal personality not supported")
 
@@ -369,8 +369,8 @@ class LongitudinalMpc:
       cost_weights = [X_EGO_OBSTACLE_COST, X_EGO_COST, V_EGO_COST, A_EGO_COST, jerk_factor * a_change_cost * a_change_v_ego, jerk_factor * J_EGO_COST * j_ego_v_ego]
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, DANGER_ZONE_COST]
     elif self.mode == 'blended':
-      a_change_cost = 80.0 if prev_accel_constraint else 0
-      cost_weights = [1., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 1.0]
+      a_change_cost = 150.0 if prev_accel_constraint else 0
+      cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 1.0]
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, DANGER_ZONE_COST]
     else:
       raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner cost set')
@@ -476,12 +476,12 @@ class LongitudinalMpc:
       x_e2e = np.cumsum(np.insert(xforward, 0, x[0])) * 1.0 # 將 e2e 預測距離額外乘以 0.95，會讓 e2e 軌跡對加速目標略顯保守。數值越接近 1，e2e 的影響越大；越小，則更偏向 cruise，進而影響加速決策和引擎轉速。
       # 混合 e2e 和 cruise，根據速度平滑插值
       v_low, v_high = 5.0, 15.0
-      w = np.clip((v_ego - v_low) / (v_high - v_low), 0.0, 1.0)
+      w = np.clip((v_ego - v_low) / (v_high - v_low), 0.0, 0.5)
 
       if v_ego >= v_high:
         x_mixed = np.minimum(x_e2e, cruise_target)
       else:
-        x_mixed = w * np.minimum(x_e2e, cruise_target) + (1 - w) * np.maximum(x_e2e, cruise_target)
+        x_mixed = (1 - w) * np.minimum(x_e2e, cruise_target) + w * np.maximum(x_e2e, cruise_target)
       #x[:] = x_mixed  # 修正此行
       # 先算出带时距的“安全”lead 障碍
       lead_safe_0 = lead_xv_0[:,0] + get_safe_obstacle_distance(lead_xv_0[:,1], t_follow, stop_distance)
@@ -489,6 +489,14 @@ class LongitudinalMpc:
       lead_safe = np.minimum(lead_safe_0, lead_safe_1)
       # clamp 掉任何小于安全距离的部分
       x[:] = np.maximum(x_mixed, lead_safe)
+
+      self.yref[:,1] = x
+      self.yref[:,2] = v
+      self.yref[:,3] = a
+      self.yref[:,5] = j
+      for i in range(N):
+        self.solver.set(i, "yref", self.yref[i])
+      self.solver.set(N, "yref", self.yref[N][:COST_E_DIM])
 
       e2e_dist = x_e2e[1]
       cruise_dist = cruise_target[1]
