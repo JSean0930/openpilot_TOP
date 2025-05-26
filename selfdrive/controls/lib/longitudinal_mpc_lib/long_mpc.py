@@ -431,7 +431,7 @@ class LongitudinalMpc:
       x[:], v[:], a[:], j[:] = 0.0, 0.0, 0.0, 0.0
 
     elif self.mode == 'blended':
-      self.params[:,5] = 1.0
+      self.params[:,5] = 1.0 * 0.8
 
       x_obstacles = np.column_stack([lead_0_obstacle,
                                      lead_1_obstacle])
