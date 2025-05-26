@@ -447,7 +447,7 @@ class LongitudinalMpc:
       #x = np.max(x_and_cruise, axis=1)
       #計算速度加權：低速偏 e2e，高速偏 cruise
       w = np.clip((v_ego - 5.0) / 10.0, 0.0, 1.0)  #15
-      x = (1 - w) * np.max(x_and_cruise, axis=1) + w * np.min(x_and_cruise, axis=1)
+      x = (1 - w) * np.min(x_and_cruise, axis=1) + w * np.max(x_and_cruise, axis=1)
       # 若 e2e 比 cruise 明顯遠，才使用 e2e 作為來源
       self.source = 'e2e' if x_and_cruise[1,0] > x_and_cruise[1,1] *1.1 else 'cruise' # 當 e2e 預測距離較 cruise 超前 10% 時，才真正採用 e2e 軌跡。這個閾值越低，越容易觸發 e2e 跟隨，其激進程度也越可能推高轉速。
 
