@@ -341,7 +341,7 @@ class LongitudinalMpc:
       cost_weights = [X_EGO_OBSTACLE_COST, X_EGO_COST, V_EGO_COST, A_EGO_COST, jerk_factor * a_change_cost * a_change_v_ego, jerk_factor * J_EGO_COST * j_ego_v_ego]
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, DANGER_ZONE_COST]
     elif self.mode == 'blended':
-      a_change_cost = 160.0 if prev_accel_constraint else 0
+      a_change_cost = 170.0 if prev_accel_constraint else 0
       cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 1.0]
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, DANGER_ZONE_COST]
     else:
@@ -431,7 +431,7 @@ class LongitudinalMpc:
       x[:], v[:], a[:], j[:] = 0.0, 0.0, 0.0, 0.0
 
     elif self.mode == 'blended':
-      self.params[:,5] = 1.0
+      self.params[:,5] = 1.05  #1.0
 
       x_obstacles = np.column_stack([lead_0_obstacle,
                                      lead_1_obstacle])
