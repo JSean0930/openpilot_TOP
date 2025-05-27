@@ -34,6 +34,13 @@ COST_E_DIM = 5
 COST_DIM = COST_E_DIM + 1
 CONSTR_DIM = 4
 
+#安全 vs 舒適：
+  #提高 X_EGO_OBSTACLE_COST 和 DANGER_ZONE_COST → 優先安全，保持較大跟車距離
+  #提高 A_EGO_COST、A_CHANGE_COST、J_EGO_COST → 優先平順，減少急加減速與指令突變
+
+#反應速度 vs 保守性：
+  #降低 V_EGO_COST → 願意跑更高車速，提高追趕或切入的積極度
+  #降低 X_EGO_COST → 願意往前移動，準備加速跟上前方車流
 X_EGO_OBSTACLE_COST = 2. # 降低避障成本以避免過於保守
 X_EGO_COST = 1.0  # 增加以提升車距追蹤精度
 V_EGO_COST = 1.0  # 適度權重於自車速度
