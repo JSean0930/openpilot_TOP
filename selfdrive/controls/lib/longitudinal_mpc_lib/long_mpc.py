@@ -43,11 +43,11 @@ CONSTR_DIM = 4
   #降低 X_EGO_COST → 願意往前移動，準備加速跟上前方車流
 X_EGO_OBSTACLE_COST = 3.
 X_EGO_COST = 0.
-V_EGO_COST = 0.
-A_EGO_COST = 0.
+V_EGO_COST = 1. #0.
+A_EGO_COST = 1. #0.
 J_EGO_COST = 5.0
 A_CHANGE_COST = 200.
-DANGER_ZONE_COST = 100.
+DANGER_ZONE_COST = 150. #100.
 CRASH_DISTANCE = .25
 LEAD_DANGER_FACTOR = 0.75
 LIMIT_COST = 1e6
@@ -345,7 +345,7 @@ class LongitudinalMpc:
     if self.mode == 'acc':
       a_change_cost = A_CHANGE_COST if prev_accel_constraint else 0
       cost_weights = [X_EGO_OBSTACLE_COST, X_EGO_COST, V_EGO_COST, A_EGO_COST, jerk_factor * a_change_cost * a_change_v_ego, jerk_factor * J_EGO_COST * j_ego_v_ego]
-      constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, DANGER_ZONE_COST]
+      constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, DANGER_ZONE_COST * 2]
     elif self.mode == 'blended':
       a_change_cost = 40.0 if prev_accel_constraint else 0
       cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 1.0]
