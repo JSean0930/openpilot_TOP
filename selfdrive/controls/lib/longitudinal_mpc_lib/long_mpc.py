@@ -349,8 +349,8 @@ class LongitudinalMpc:
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, DANGER_ZONE_COST]
     elif self.mode == 'blended':
       a_change_cost = 170.0 if prev_accel_constraint else 0
-      #cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 1.0]
-      cost_weights = [X_EGO_OBSTACLE_COST, X_EGO_COST, V_EGO_COST, A_EGO_COST, jerk_factor * a_change_cost * a_change_v_ego, jerk_factor * J_EGO_COST * j_ego_v_ego]
+      cost_weights = [2., 1.0, 1.0, 5.0, a_change_cost * a_change_v_ego, 1.0]
+      #cost_weights = [X_EGO_OBSTACLE_COST, X_EGO_COST, V_EGO_COST, A_EGO_COST, jerk_factor * a_change_cost * a_change_v_ego, jerk_factor * J_EGO_COST * j_ego_v_ego]
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, DANGER_ZONE_COST]
     else:
       raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner cost set')
@@ -454,10 +454,10 @@ class LongitudinalMpc:
       x_and_cruise = np.column_stack([x * 1.0, cruise_target]) # 將 e2e 預測距離額外乘以 0.95，會讓 e2e 軌跡對加速目標略顯保守。數值越接近 1，e2e 的影響越大；越小，則更偏向 cruise，進而影響加速決策和引擎轉速。
       #x = np.max(x_and_cruise, axis=1)
       #計算速度加權：低速偏 e2e，高速偏 cruise
-      w = np.clip((v_ego - 5.0) / 10.0, 0.0, 0.5)  #15
+      w = np.clip((v_ego - 5.0) / 10.0, 0.0, 0.3)  #15
       x = (1 - w) * np.min(x_and_cruise, axis=1) + w * np.max(x_and_cruise, axis=1)
       # 若 e2e 比 cruise 明顯遠，才使用 e2e 作為來源
-      self.source = 'e2e' if x_and_cruise[1,0] > x_and_cruise[1,1] *1.1 else 'cruise' # 當 e2e 預測距離較 cruise 超前 10% 時，才真正採用 e2e 軌跡。這個閾值越低，越容易觸發 e2e 跟隨，其激進程度也越可能推高轉速。
+      self.source = 'e2e' if x_and_cruise[1,0] > x_and_cruise[1,1] *1.5 else 'cruise' # 當 e2e 預測距離較 cruise 超前 10% 時，才真正採用 e2e 軌跡。這個閾值越低，越容易觸發 e2e 跟隨，其激進程度也越可能推高轉速。
 
     else:
       raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner update')
