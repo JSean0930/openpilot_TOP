@@ -34,6 +34,13 @@ COST_E_DIM = 5
 COST_DIM = COST_E_DIM + 1
 CONSTR_DIM = 4
 
+#安全 vs 舒適：
+  #提高 X_EGO_OBSTACLE_COST 和 DANGER_ZONE_COST → 優先安全，保持較大跟車距離
+  #提高 A_EGO_COST、A_CHANGE_COST、J_EGO_COST → 優先平順，減少急加減速與指令突變
+
+#反應速度 vs 保守性：
+  #降低 V_EGO_COST → 願意跑更高車速，提高追趕或切入的積極度
+  #降低 X_EGO_COST → 願意往前移動，準備加速跟上前方車流
 X_EGO_OBSTACLE_COST = 3.
 X_EGO_COST = 0.
 V_EGO_COST = 0.
@@ -49,11 +56,11 @@ ACADOS_SOLVER_TYPE = 'SQP_RTI'
 
 # Fewer timestamps don't hurt performance and lead to
 # much better convergence of the MPC with low iterations
-N = 12
-MAX_T = 10.0
-T_IDXS_LST = [index_function(idx, max_val=MAX_T, max_idx=N) for idx in range(N+1)]
-
-T_IDXS = np.array(T_IDXS_LST)
+N = 16 #12
+MAX_T = 15.0 #10.0
+T_IDXS = (np.linspace(0, 1, N + 1) ** 2.0) * MAX_T # 調整 **數字提升前其靈敏度(2.0前段密集、後段拉開明顯, 2.5-3.0前段極度靈敏（不自然）)
+#T_IDXS_LST = [index_function(idx, max_val=MAX_T, max_idx=N) for idx in range(N+1)]
+#T_IDXS = np.array(T_IDXS_LST)
 FCW_IDXS = T_IDXS < 5.0
 T_DIFFS = np.diff(T_IDXS, prepend=[0.])
 COMFORT_BRAKE = 2.5
@@ -101,11 +108,11 @@ def get_dynamic_follow(v_ego, personality=log.LongitudinalPersonality.standard):
 
 def get_STOP_DISTANCE(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
-    return 4.5
+    return 6.0
   elif personality==log.LongitudinalPersonality.standard:
-    return 4.0
+    return 6.0
   elif personality==log.LongitudinalPersonality.aggressive:
-    return 4.0
+    return 6.0
   else:
     raise NotImplementedError("Longitudinal personality not supported")
 
@@ -114,12 +121,13 @@ def get_stopped_equivalence_factor(v_lead, v_ego):
   # KRKeegan this offset rapidly decreases the following distance when the lead pulls
   # away, resulting in an early demand for acceleration.
   v_diff_offset = 0
-  v_diff_offset_max = 12
-  speed_to_reach_max_v_diff_offset = 26 # in kp/h
+  v_diff_offset_max = 5 #12
+  speed_to_reach_max_v_diff_offset = 12 #26 # in kp/h
   speed_to_reach_max_v_diff_offset = speed_to_reach_max_v_diff_offset * CV.KPH_TO_MS
   delta_speed = v_lead - v_ego
   if np.all(delta_speed > 0):
-    v_diff_offset = delta_speed * 2
+    #v_diff_offset = delta_speed * 2
+    v_diff_offset = (np.clip(delta_speed, 0, 5)) ** 2.5
     v_diff_offset = np.clip(v_diff_offset, 0, v_diff_offset_max)
     v_diff_offset = np.maximum(v_diff_offset * ((speed_to_reach_max_v_diff_offset - v_ego)/speed_to_reach_max_v_diff_offset), 0)
   return (v_lead**2) / (2 * COMFORT_BRAKE) + v_diff_offset
