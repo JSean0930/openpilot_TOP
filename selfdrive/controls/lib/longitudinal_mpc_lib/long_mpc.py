@@ -41,7 +41,7 @@ CONSTR_DIM = 4
 #反應速度 vs 保守性：
   #降低 V_EGO_COST → 願意跑更高車速，提高追趕或切入的積極度
   #降低 X_EGO_COST → 願意往前移動，準備加速跟上前方車流
-X_EGO_OBSTACLE_COST = 2.
+X_EGO_OBSTACLE_COST = 2. #3.
 X_EGO_COST = 0.
 V_EGO_COST = 1. #0.
 A_EGO_COST = 1. #0.
