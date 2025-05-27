@@ -44,7 +44,7 @@ CONSTR_DIM = 4
 X_EGO_OBSTACLE_COST = 2. # 降低避障成本以避免過於保守
 X_EGO_COST = 1.0  # 增加以提升車距追蹤精度
 V_EGO_COST = 1.0  # 適度權重於自車速度
-A_EGO_COST = 1.0  # 對加速度施加小懲罰以平滑動作曲線
+A_EGO_COST = 5.0  # 對加速度施加小懲罰以平滑動作曲線
 J_EGO_COST = 3.0  # 降低 jerk 懲罰以提高反應靈敏度
 A_CHANGE_COST = 175.  # 降低以提供更大加速自由度
 DANGER_ZONE_COST = 100.
@@ -349,7 +349,8 @@ class LongitudinalMpc:
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, DANGER_ZONE_COST]
     elif self.mode == 'blended':
       a_change_cost = 170.0 if prev_accel_constraint else 0
-      cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 1.0]
+      #cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 1.0]
+      cost_weights = [X_EGO_OBSTACLE_COST, X_EGO_COST, V_EGO_COST, A_EGO_COST, jerk_factor * a_change_cost * a_change_v_ego, jerk_factor * J_EGO_COST * j_ego_v_ego]
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, DANGER_ZONE_COST]
     else:
       raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner cost set')
