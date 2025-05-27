@@ -409,9 +409,8 @@ class LongitudinalMpc:
     return lead_xv
 
   def update(self, radarstate, v_cruise, x, v, a, j, v_ego, a_lead, personality=log.LongitudinalPersonality.standard, dynamic_follow=False):
-    t_follow = get_adaptive_T_FOLLOW(v_ego, a_lead, personality)
     v_ego = self.x0[1]
-    t_follow = get_T_FOLLOW(personality) if not dynamic_follow else get_dynamic_follow(v_ego, personality)
+    t_follow = get_adaptive_T_FOLLOW(v_ego, a_lead, personality) if not dynamic_follow else get_dynamic_follow(v_ego, personality)
     stop_distance = get_STOP_DISTANCE(personality)
 
     if Params().get_bool("ToyotaTune") and not (self.CP.flags & ToyotaFlags.SMART_DSU):
