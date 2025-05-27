@@ -81,11 +81,11 @@ def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
 
 def get_T_FOLLOW(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
-    return 1.8
+    return 1.45
   elif personality==log.LongitudinalPersonality.standard:
-    return 1.3
+    return 1.25
   elif personality==log.LongitudinalPersonality.aggressive:
-    return 0.9
+    return 1.0
   else:
     raise NotImplementedError("Longitudinal personality not supported")
 
@@ -105,6 +105,22 @@ def get_dynamic_follow(v_ego, personality=log.LongitudinalPersonality.standard):
     raise NotImplementedError("Dynamic Follow personality not supported")
   return np.interp(v_ego, x_vel, y_dist)
 
+def get_adaptive_T_FOLLOW(v_ego, a_lead, personality=log.LongitudinalPersonality.standard):
+  # 基本 T_FOLLOW
+  base_t_follow = get_T_FOLLOW(personality)
+
+  # 2. 隨車速線性增加的時距
+  K_SPEED = 0.5 / 33.0
+  extra_speed_t = np.clip(K_SPEED * v_ego, 0.0, 1.0)
+  base_t_follow += extra_speed_t
+  
+  # 當前車有明顯減速時，額外增加安全距離, -0.5m/s^2
+  if a_lead < -0.5:
+    # 增加最多 0.5 秒追車時距，視前車減速度線性調整
+    extra_t_follow = np.clip(-0.3 * a_lead, 0.0, 0.5)
+    base_t_follow += extra_t_follow
+
+  return base_t_follow
 
 def get_STOP_DISTANCE(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
@@ -137,13 +153,12 @@ def get_safe_obstacle_distance(v_ego, t_follow, stop_distance=None):
     stop_distance = get_STOP_DISTANCE()
   return (v_ego**2) / (2 * COMFORT_BRAKE) + t_follow * v_ego + stop_distance
 
-def desired_follow_distance(v_ego, v_lead, t_follow=None, stop_distance=None):
+def desired_follow_distance(v_ego, v_lead, a_lead, t_follow=None, stop_distance=None, personality=log.LongitudinalPersonality.standard):
   if t_follow is None:
-    t_follow = get_T_FOLLOW()
+    t_follow = get_adaptive_T_FOLLOW(v_ego, a_lead, personality)
   if stop_distance is None:
-    stop_distance = get_STOP_DISTANCE()
+    stop_distance = get_STOP_DISTANCE(personality)
   return get_safe_obstacle_distance(v_ego, t_follow, stop_distance) - get_stopped_equivalence_factor(v_lead, v_ego)
-
 
 def gen_long_model():
   model = AcadosModel()
@@ -240,7 +255,7 @@ def gen_long_ocp():
 
   x0 = np.zeros(X_DIM)
   ocp.constraints.x0 = x0
-  ocp.parameter_values = np.array([-1.2, 1.2, 0.0, 0.0, get_T_FOLLOW(), LEAD_DANGER_FACTOR, get_STOP_DISTANCE()])
+  ocp.parameter_values = np.array([-1.2, 1.2, 0.0, 0.0, get_adaptive_T_FOLLOW(0.0, 0.0), LEAD_DANGER_FACTOR, get_STOP_DISTANCE()])
 
 
   # We put all constraint cost weights to 0 and only set them at runtime
@@ -394,7 +409,7 @@ class LongitudinalMpc:
     return lead_xv
 
   def update(self, radarstate, v_cruise, x, v, a, j, personality=log.LongitudinalPersonality.standard, dynamic_follow=False):
-    t_follow = get_T_FOLLOW(personality)
+    t_follow = get_adaptive_T_FOLLOW(v_ego, a_lead, personality)
     v_ego = self.x0[1]
     t_follow = get_T_FOLLOW(personality) if not dynamic_follow else get_dynamic_follow(v_ego, personality)
     stop_distance = get_STOP_DISTANCE(personality)
