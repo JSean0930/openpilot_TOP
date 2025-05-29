@@ -62,7 +62,23 @@ MAX_T = 15.0 #10.0
 # 根據 N 與 MAX_T 調整的預測時間範圍
 #T_IDXS_LST = [index_function(idx, max_val=MAX_T, max_idx=N) for idx in range(N+1)]
 #T_IDXS = np.array(T_IDXS_LST)
-T_IDXS = (np.linspace(0, 1, N + 1) ** 2.0) * MAX_T # 調整 **數字提升前其靈敏度(2.0前段密集、後段拉開明顯, 2.5-3.0前段極度靈敏（不自然）)
+#T_IDXS = (np.linspace(0, 1, N + 1) ** 2.0) * MAX_T # 調整 **數字提升前其靈敏度(2.0前段密集、後段拉開明顯, 2.5-3.0前段極度靈敏（不自然）)
+def compute_T_IDXS(v_ego):
+    """
+    根據車速 v_ego (m/s) 回傳對應的 T_IDXS：
+      - 低於 60 km/h：二次方 spacing
+      - 高於等於 60 km/h：使用 index_function
+    """
+    speed_kph = v_ego * 3.6
+    if speed_kph < 60.0:
+        # 前段密集、後段拉開：反應靈敏
+        return (np.linspace(0, 1, N + 1) ** 2.0) * MAX_T
+    else:
+        # 較均勻分佈：更保守、平順
+        return np.array([index_function(idx, max_val=MAX_T, max_idx=N)
+                         for idx in range(N+1)])
+
+#=========================================================
 FCW_IDXS = T_IDXS < 5.0
 T_DIFFS = np.diff(T_IDXS, prepend=[0.])
 COMFORT_BRAKE = 2.5
@@ -399,6 +415,9 @@ class LongitudinalMpc:
   def update(self, radarstate, v_cruise, x, v, a, j, personality=log.LongitudinalPersonality.standard, dynamic_follow=False):
     t_follow = get_T_FOLLOW(personality)
     v_ego = self.x0[1]
+    # 1. 動態算出時間節點
+    T_IDXS = compute_T_IDXS(v_ego)
+    T_DIFFS = np.diff(T_IDXS, prepend=[0.])
     t_follow = get_T_FOLLOW(personality) if not dynamic_follow else get_dynamic_follow(v_ego, personality)
     stop_distance = get_STOP_DISTANCE(personality)
 
@@ -444,7 +463,7 @@ class LongitudinalMpc:
       x_obstacles = np.column_stack([lead_0_obstacle,
                                      lead_1_obstacle])
       # cruise 目標距離
-      cruise_target = T_IDXS * np.clip(v_cruise * 0.9, v_ego - 2.0, 1e3) + x[0] # *1.0是放大係數（可改為 >1.0 讓巡航更激進，或 <1.0 更保守），下限 v_ego - 2.0 決定了當車速高於目標時是否允許輕微減速。
+      cruise_target = T_IDXS * np.clip(v_cruise, v_ego - 2.0, 1e3) + x[0] # *1.0是放大係數（可改為 >1.0 讓巡航更激進，或 <1.0 更保守），下限 v_ego - 2.0 決定了當車速高於目標時是否允許輕微減速。
       # —— 1) 動態縮減巡航速度 ——
       #speed_kph = v_ego * 3.6
       #if speed_kph > 90:
