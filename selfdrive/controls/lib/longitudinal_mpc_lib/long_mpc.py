@@ -62,7 +62,7 @@ MAX_T = 15.0 #10.0
 # 根據 N 與 MAX_T 調整的預測時間範圍
 #T_IDXS_LST = [index_function(idx, max_val=MAX_T, max_idx=N) for idx in range(N+1)]
 #T_IDXS = np.array(T_IDXS_LST)
-#T_IDXS = (np.linspace(0, 1, N + 1) ** 2.0) * MAX_T # 調整 **數字提升前其靈敏度(2.0前段密集、後段拉開明顯, 2.5-3.0前段極度靈敏（不自然）)
+T_IDXS = (np.linspace(0, 1, N + 1) ** 2.0) * MAX_T # 調整 **數字提升前其靈敏度(2.0前段密集、後段拉開明顯, 2.5-3.0前段極度靈敏（不自然）)
 def compute_T_IDXS(v_ego):
     """
     根據車速 v_ego (m/s) 回傳對應的 T_IDXS：
@@ -381,9 +381,9 @@ class LongitudinalMpc:
         self.solver.set(i, 'x', self.x0)
 
   @staticmethod
-  def extrapolate_lead(x_lead, v_lead, a_lead, a_lead_tau):
+  def extrapolate_lead(x_lead, v_lead, a_lead, a_lead_tau, T_DIFFS):
     #a_lead_traj = a_lead * np.exp(-a_lead_tau * (T_IDXS**2)/2.)
-    a_lead_traj = a_lead * np.exp(-T_IDXS / a_lead_tau)
+    a_lead_traj = a_lead * np.exp(-T_DIFFS.cumsum() / a_lead_tau)
     v_lead_traj = np.clip(v_lead + np.cumsum(T_DIFFS * a_lead_traj), 0.0, 1e8)
     x_lead_traj = x_lead + np.cumsum(T_DIFFS * v_lead_traj)
     lead_xv = np.column_stack((x_lead_traj, v_lead_traj))
@@ -416,8 +416,8 @@ class LongitudinalMpc:
     t_follow = get_T_FOLLOW(personality)
     v_ego = self.x0[1]
     # 1. 動態算出時間節點
-    T_IDXS = compute_T_IDXS(v_ego)
-    T_DIFFS = np.diff(T_IDXS, prepend=[0.])
+    T_IDXS_loc = compute_T_IDXS(v_ego)
+    T_DIFFS_loc = np.diff(T_IDXS, prepend=[0.])
     t_follow = get_T_FOLLOW(personality) if not dynamic_follow else get_dynamic_follow(v_ego, personality)
     stop_distance = get_STOP_DISTANCE(personality)
 
