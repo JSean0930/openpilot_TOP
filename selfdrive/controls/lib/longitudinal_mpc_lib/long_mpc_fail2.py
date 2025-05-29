@@ -62,23 +62,7 @@ MAX_T = 15.0 #10.0
 # 根據 N 與 MAX_T 調整的預測時間範圍
 #T_IDXS_LST = [index_function(idx, max_val=MAX_T, max_idx=N) for idx in range(N+1)]
 #T_IDXS = np.array(T_IDXS_LST)
-T_IDXS = (np.linspace(0, 1, N + 1) ** 2.0) * MAX_T # 調整 **數字提升前其靈敏度(2.0前段密集、後段拉開明顯, 2.5-3.0前段極度靈敏（不自然）)
-def compute_T_IDXS(v_ego):
-    """
-    根據車速 v_ego (m/s) 回傳對應的 T_IDXS：
-      - 低於 60 km/h：二次方 spacing
-      - 高於等於 60 km/h：使用 index_function
-    """
-    speed_kph = v_ego * 3.6
-    if speed_kph < 60.0:
-        # 前段密集、後段拉開：反應靈敏
-        return (np.linspace(0, 1, N + 1) ** 2.0) * MAX_T
-    else:
-        # 較均勻分佈：更保守、平順
-        return np.array([index_function(idx, max_val=MAX_T, max_idx=N)
-                         for idx in range(N+1)])
-
-#=========================================================
+T_IDXS = (np.linspace(0, 1, N + 1) ** 1.0) * MAX_T # 調整 **數字提升前其靈敏度(2.0前段密集、後段拉開明顯, 2.5-3.0前段極度靈敏（不自然）)
 FCW_IDXS = T_IDXS < 5.0
 T_DIFFS = np.diff(T_IDXS, prepend=[0.])
 COMFORT_BRAKE = 2.5
@@ -381,7 +365,7 @@ class LongitudinalMpc:
         self.solver.set(i, 'x', self.x0)
 
   @staticmethod
-  def extrapolate_lead(x_lead, v_lead, a_lead, a_lead_tau, T_DIFFS):
+  def extrapolate_lead(x_lead, v_lead, a_lead, a_lead_tau):
     #a_lead_traj = a_lead * np.exp(-a_lead_tau * (T_IDXS**2)/2.)
     a_lead_traj = a_lead * np.exp(-T_DIFFS.cumsum() / a_lead_tau)
     v_lead_traj = np.clip(v_lead + np.cumsum(T_DIFFS * a_lead_traj), 0.0, 1e8)
