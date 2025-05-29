@@ -444,7 +444,7 @@ class LongitudinalMpc:
       x_obstacles = np.column_stack([lead_0_obstacle,
                                      lead_1_obstacle])
       # cruise 目標距離
-      cruise_target = T_IDXS * np.clip(v_cruise * 1.0, v_ego - 2.0, 1e3) + x[0] # *1.0是放大係數（可改為 >1.0 讓巡航更激進，或 <1.0 更保守），下限 v_ego - 2.0 決定了當車速高於目標時是否允許輕微減速。
+      #cruise_target = T_IDXS * np.clip(v_cruise * 1.0, v_ego - 2.0, 1e3) + x[0] # *1.0是放大係數（可改為 >1.0 讓巡航更激進，或 <1.0 更保守），下限 v_ego - 2.0 決定了當車速高於目標時是否允許輕微減速。
       # —— 1) 動態縮減巡航速度 ——
       speed_kph = v_ego * 3.6
       if speed_kph > 90:
