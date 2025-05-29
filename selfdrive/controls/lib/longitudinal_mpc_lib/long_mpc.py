@@ -444,22 +444,22 @@ class LongitudinalMpc:
       x_obstacles = np.column_stack([lead_0_obstacle,
                                      lead_1_obstacle])
       # cruise 目標距離
-      #cruise_target = T_IDXS * np.clip(v_cruise * 1.0, v_ego - 2.0, 1e3) + x[0] # *1.0是放大係數（可改為 >1.0 讓巡航更激進，或 <1.0 更保守），下限 v_ego - 2.0 決定了當車速高於目標時是否允許輕微減速。
+      cruise_target = T_IDXS * np.clip(v_cruise * 0.9, v_ego - 2.0, 1e3) + x[0] # *1.0是放大係數（可改為 >1.0 讓巡航更激進，或 <1.0 更保守），下限 v_ego - 2.0 決定了當車速高於目標時是否允許輕微減速。
       # —— 1) 動態縮減巡航速度 ——
-      speed_kph = v_ego * 3.6
-      if speed_kph > 90:
-        scale = np.interp(speed_kph, [90, 120], [1.0, 0.7])
-      else:
-        scale = 1
+      #speed_kph = v_ego * 3.6
+      #if speed_kph > 90:
+        #scale = np.interp(speed_kph, [90, 120], [1.0, 0.7])
+      #else:
+        #scale = 1
         
-      adj_v_cruise = v_cruise * scale
+      #adj_v_cruise = v_cruise * scale
 
       # —— 2) 純巡航軌跡 + 安全距離限制 ——
-      cruise_base = T_IDXS * np.clip(adj_v_cruise, v_ego - 2.0, 1e3) + x[0]
+      #cruise_base = T_IDXS * np.clip(adj_v_cruise, v_ego - 2.0, 1e3) + x[0]
       # 計算安全跟車距
-      safe_dist = desired_follow_distance(v_ego, v_lead, t_follow)
-      lead_pos0 = np.min([lead_0_obstacle[0], lead_1_obstacle[0]])
-      cruise_target = np.minimum(cruise_base, lead_pos0 - safe_dist)
+      #safe_dist = desired_follow_distance(v_ego, v_lead, t_follow)
+      #lead_pos0 = np.min([lead_0_obstacle[0], lead_1_obstacle[0]])
+      #cruise_target = np.minimum(cruise_base, lead_pos0 - safe_dist)
       #=======================================================================
       # e2e 預測距離
       xforward = ((v[1:] + v[:-1]) / 2) * (T_IDXS[1:] - T_IDXS[:-1]) 
