@@ -63,7 +63,7 @@ MAX_T = 15.0 #10.0
 # 根據 N 與 MAX_T 調整的預測時間範圍
 #T_IDXS_LST = np.linspace(0, MAX_T, N + 1) ** 1.2  # 強化短期預測的精度
 #T_IDXS = np.array(T_IDXS_LST)
-T_IDXS = (np.linspace(0, 1, N + 1) ** 2.0) * MAX_T # 調整 **數字提升前其靈敏度(2.0前段密集、後段拉開明顯, 2.5-3.0前段極度靈敏（不自然）)
+T_IDXS = (np.linspace(0, 1, N + 1) ** 1.0) * MAX_T # 調整 **數字提升前其靈敏度(2.0前段密集、後段拉開明顯, 2.5-3.0前段極度靈敏（不自然）)
 FCW_IDXS = T_IDXS < 5.0
 T_DIFFS = np.diff(T_IDXS, prepend=[0.])
 COMFORT_BRAKE = 2.5
@@ -377,8 +377,9 @@ class LongitudinalMpc:
       cost_weights = [X_EGO_OBSTACLE_COST, X_EGO_COST, V_EGO_COST, A_EGO_COST, jerk_factor * a_change_cost * a_change_v_ego, jerk_factor * J_EGO_COST * j_ego_v_ego]
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, DANGER_ZONE_COST]
     elif self.mode == 'blended':
-      a_change_cost = 180.0 if prev_accel_constraint else 0
-      cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 1.0]
+      a_change_cost = 150.0 if prev_accel_constraint else 0
+      #cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 1.0]
+      cost_weights = [X_EGO_OBSTACLE_COST, X_EGO_COST, V_EGO_COST, A_EGO_COST, jerk_factor * a_change_cost * a_change_v_ego, jerk_factor * J_EGO_COST * j_ego_v_ego]
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, DANGER_ZONE_COST]
     else:
       raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner cost set')
@@ -473,18 +474,18 @@ class LongitudinalMpc:
       x[:], v[:], a[:], j[:] = 0.0, 0.0, 0.0, 0.0
 
     elif self.mode == 'blended':
-      self.params[:,5] = 1.05 #1.0
+      self.params[:,5] = 1.0 #1.0
       x_obstacles = np.column_stack([lead_0_obstacle, lead_1_obstacle])
       
       # cruise 目標距離（略為積極）
-      cruise_target = T_IDXS * np.clip(v_cruise * 1.0, v_ego - 2.0, 1e3) + x[0] # *1.0是放大係數（可改為 >1.0 讓巡航更激進，或 <1.0 更保守），下限 v_ego - 2.0 決定了當車速高於目標時是否允許輕微減速。
+      cruise_target = T_IDXS * np.clip(v_cruise, v_ego - 2.0, 1e3) + x[0] # *1.0是放大係數（可改為 >1.0 讓巡航更激進，或 <1.0 更保守），下限 v_ego - 2.0 決定了當車速高於目標時是否允許輕微減速。
       
       # e2e 預測距離
       xforward = ((v[1:] + v[:-1]) / 2) * (T_IDXS[1:] - T_IDXS[:-1])
-      x_e2e = np.cumsum(np.insert(xforward, 0, x[0])) * 1.0 # 將 e2e 預測距離額外乘以 0.95，會讓 e2e 軌跡對加速目標略顯保守。數值越接近 1，e2e 的影響越大；越小，則更偏向 cruise，進而影響加速決策和引擎轉速。
+      x_e2e = np.cumsum(np.insert(xforward, 0, x[0])) * 0.9 # 將 e2e 預測距離額外乘以 0.95，會讓 e2e 軌跡對加速目標略顯保守。數值越接近 1，e2e 的影響越大；越小，則更偏向 cruise，進而影響加速決策和引擎轉速。
       # 混合 e2e 和 cruise，根據速度平滑插值
       v_low, v_high = 5.0, 15.0
-      w = np.clip((v_ego - v_low) / (v_high - v_low), 0.0, 0.5)
+      w = np.clip((v_ego - v_low) / (v_high - v_low), 0.0, 0.2)
 
       x_mixed = (1 - w) * np.minimum(x_e2e, cruise_target) + w * np.maximum(x_e2e, cruise_target)
       #x[:] = x_mixed  # 修正此行
@@ -505,10 +506,11 @@ class LongitudinalMpc:
 
       e2e_dist = x_e2e[1]
       cruise_dist = cruise_target[1]
-      if self.source == 'e2e':
-        self.source = 'e2e' if e2e_dist > cruise_dist * 0.9 else 'cruise'
+      speed_kph = v_ego * 3.6
+      if speed_kph < 50:
+        self.source = 'e2e' if e2e_dist > cruise_dist else 'cruise'
       else:
-        self.source = 'e2e' if e2e_dist > cruise_dist * 1.1 else 'cruise'
+        self.source = 'e2e' if e2e_dist < cruise_dist else 'cruise'
     else:
       raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner update')
 
