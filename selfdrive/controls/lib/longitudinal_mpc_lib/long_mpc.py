@@ -472,11 +472,11 @@ class LongitudinalMpc:
       x_and_cruise = np.column_stack([x * 1.0, cruise_target]) # 將 e2e 預測距離額外乘以 0.95，會讓 e2e 軌跡對加速目標略顯保守。數值越接近 1，e2e 的影響越大；越小，則更偏向 cruise，進而影響加速決策和引擎轉速。
       #x = np.max(x_and_cruise, axis=1)
       #計算速度加權：低速偏 e2e，高速偏 cruise
-      w = np.clip((v_ego - 5.0) / 28.0, 0.0, 0.3)  #15
+      w = np.clip((v_ego - 5.0) / 28.0, 0.0, 0.2)  #15
       # 高速時再衰減
       #decay = np.interp(speed_kph, [100, 140], [1.0, 0.5])
       #w *= decay
-      x = (1 - w) * np.min(x_and_cruise, axis=1) + w * np.max(x_and_cruise, axis=1)
+      x = (1 - w) * np.min(x_and_cruise, axis=1) + w * np.max(x_and_cruise, axis=1) * 0.9
       #==========================================================================
       # 若 e2e 比 cruise 明顯遠，才使用 e2e 作為來源
       if speed_kph < 50:
