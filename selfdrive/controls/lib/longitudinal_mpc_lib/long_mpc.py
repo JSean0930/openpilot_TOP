@@ -34,6 +34,13 @@ COST_E_DIM = 5
 COST_DIM = COST_E_DIM + 1
 CONSTR_DIM = 4
 
+#安全 vs 舒適：
+  #提高 X_EGO_OBSTACLE_COST 和 DANGER_ZONE_COST → 優先安全，保持較大跟車距離
+  #提高 A_EGO_COST、A_CHANGE_COST、J_EGO_COST → 優先平順，減少急加減速與指令突變
+
+#反應速度 vs 保守性：
+  #降低 V_EGO_COST → 願意跑更高車速，提高追趕或切入的積極度
+  #降低 X_EGO_COST → 願意往前移動，準備加速跟上前方車流
 X_EGO_OBSTACLE_COST = 2. #3
 X_EGO_COST = 0.
 V_EGO_COST = 0.
@@ -49,12 +56,10 @@ ACADOS_SOLVER_TYPE = 'SQP_RTI'
 
 # Fewer timestamps don't hurt performance and lead to
 # much better convergence of the MPC with low iterations
-#N = 12
-#MAX_T = 10.0
-#T_IDXS_LST = [index_function(idx, max_val=MAX_T, max_idx=N) for idx in range(N+1)]
 N = 16 #12
 MAX_T = 15.0 #10.0
 T_IDXS = (np.linspace(0, 1, N + 1) ** 2.0) * MAX_T # 調整 **數字提升前其靈敏度(2.0前段密集、後段拉開明顯, 2.5-3.0前段極度靈敏（不自然）)
+#T_IDXS_LST = [index_function(idx, max_val=MAX_T, max_idx=N) for idx in range(N+1)]
 #T_IDXS = np.array(T_IDXS_LST)
 FCW_IDXS = T_IDXS < 5.0
 T_DIFFS = np.diff(T_IDXS, prepend=[0.])
@@ -76,9 +81,9 @@ def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
 
 def get_T_FOLLOW(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
-    return 1.8
+    return 1.4
   elif personality==log.LongitudinalPersonality.standard:
-    return 1.3
+    return 1.25
   elif personality==log.LongitudinalPersonality.aggressive:
     return 0.9
   else:
@@ -394,7 +399,7 @@ class LongitudinalMpc:
     stop_distance = get_STOP_DISTANCE(personality)
 
     if Params().get_bool("ToyotaTune") and not (self.CP.flags & ToyotaFlags.SMART_DSU):
-      stop_distance += 1
+      stop_distance += 3.0
 
     self.status = radarstate.leadOne.status or radarstate.leadTwo.status
 
