@@ -449,7 +449,7 @@ class LongitudinalMpc:
       # cruise 目標距離
       cruise_target = T_IDXS * np.clip(v_cruise, v_ego - 2.0, 1e3) + x[0] # *1.0是放大係數（可改為 >1.0 讓巡航更激進，或 <1.0 更保守），下限 v_ego - 2.0 決定了當車速高於目標時是否允許輕微減速。
       # —— 1) 動態縮減巡航速度 ——
-      speed_kph = v_ego * 3.6
+      #speed_kph = v_ego * 3.6
       #if speed_kph > 90:
         #scale = np.interp(speed_kph, [90, 120], [1.0, 0.7])
       #else:
@@ -470,7 +470,7 @@ class LongitudinalMpc:
 
       # 混合 e2e 和 cruise，根據速度平滑插值
       x_and_cruise = np.column_stack([x * 1.0, cruise_target]) # 將 e2e 預測距離額外乘以 0.95，會讓 e2e 軌跡對加速目標略顯保守。數值越接近 1，e2e 的影響越大；越小，則更偏向 cruise，進而影響加速決策和引擎轉速。
-      #x = np.max(x_and_cruise, axis=1)
+      x = np.max(x_and_cruise, axis=1)
       #計算速度加權：低速偏 e2e，高速偏 cruise
       w = np.clip((v_ego - 5.0) / 28.0, 0.0, 0.2)  #15
       # 高速時再衰減
@@ -479,7 +479,7 @@ class LongitudinalMpc:
       x = (1 - w) * np.min(x_and_cruise, axis=1) + w * np.max(x_and_cruise, axis=1) * 0.9
       #==========================================================================
       # 若 e2e 比 cruise 明顯遠，才使用 e2e 作為來源
-      if speed_kph < 50:
+      if v_ego < 11.11:
         self.source = 'e2e' if x_and_cruise[1,0] > x_and_cruise[1,1] else 'cruise' # 當 e2e 預測距離較 cruise 超前 10% 時，才真正採用 e2e 軌跡。這個閾值越低，越容易觸發 e2e 跟隨，其激進程度也越可能推高轉速。
       else:
         self.source = 'e2e' if x_and_cruise[1,0] < x_and_cruise[1,1] else 'cruise'
