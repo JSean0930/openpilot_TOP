@@ -400,8 +400,8 @@ class LongitudinalMpc:
     t_follow = get_T_FOLLOW(personality)
     v_ego = self.x0[1]
     # 1. 動態算出時間節點
-    T_IDXS_loc = compute_T_IDXS(v_ego)
-    T_DIFFS_loc = np.diff(T_IDXS, prepend=[0.])
+    #T_IDXS_loc = compute_T_IDXS(v_ego)
+    #T_DIFFS_loc = np.diff(T_IDXS, prepend=[0.])
     t_follow = get_T_FOLLOW(personality) if not dynamic_follow else get_dynamic_follow(v_ego, personality)
     stop_distance = get_STOP_DISTANCE(personality)
 
