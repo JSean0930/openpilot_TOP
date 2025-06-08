@@ -69,6 +69,7 @@ COMFORT_BRAKE = 2.5
 # STOP_DISTANCE = 6.0
 CRUISE_MIN_ACCEL = -1.2
 CRUISE_MAX_ACCEL = 1.6
+speed_kph = v_ego * 3.6
 
 def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
@@ -456,7 +457,6 @@ class LongitudinalMpc:
       # cruise 目標距離
       cruise_target = T_IDXS * np.clip(v_cruise, v_ego - 2.0, 1e3) + x[0] # *1.0是放大係數（可改為 >1.0 讓巡航更激進，或 <1.0 更保守），下限 v_ego - 2.0 決定了當車速高於目標時是否允許輕微減速。
       # —— 1) 動態縮減巡航速度 ——
-      speed_kph = v_ego * 3.6
       #if speed_kph > 90:
         #scale = np.interp(speed_kph, [90, 120], [1.0, 0.7])
       #else:
