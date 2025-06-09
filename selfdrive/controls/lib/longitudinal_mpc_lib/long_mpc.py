@@ -493,15 +493,15 @@ class LongitudinalMpc:
       x = (1 - w) * np.min(x_and_cruise, axis=1) + w * np.max(x_and_cruise, axis=1)
       #==========================================================================
       # 若 e2e 比 cruise 明顯遠，才使用 e2e 作為來源
-      #if speed_kph < 50:
-        #self.source = 'e2e' if x_and_cruise[1,0] > x_and_cruise[1,1] else 'cruise' # 當 e2e 預測距離較 cruise 超前 10% 時，才真正採用 e2e 軌跡。這個閾值越低，越容易觸發 e2e 跟隨，其激進程度也越可能推高轉速。
-      #else:
-        #self.source = 'e2e' if x_and_cruise[1,0] < x_and_cruise[1,1] else 'cruise'
-
-      if speed_kph < 60:
-        self.source = 'e2e'
+      if speed_kph < 50:
+        self.source = 'e2e' if x_and_cruise[1,0] > x_and_cruise[1,1] else 'cruise' # 當 e2e 預測距離較 cruise 超前 10% 時，才真正採用 e2e 軌跡。這個閾值越低，越容易觸發 e2e 跟隨，其激進程度也越可能推高轉速。
       else:
-        self.source = 'cruise'
+        self.source = 'e2e' if x_and_cruise[1,0] < x_and_cruise[1,1] else 'cruise'
+
+      #if speed_kph < 60:
+        #self.source = 'e2e'
+      #else:
+        #self.source = 'cruise'
 
     else:
       raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner update')
