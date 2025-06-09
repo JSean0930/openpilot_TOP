@@ -147,7 +147,7 @@ def desired_follow_distance(v_ego, v_lead, t_follow=None, stop_distance=None, pe
     t_follow = get_T_FOLLOW(personality)
   if stop_distance is None:
     stop_distance = get_STOP_DISTANCE(personality)
-  return get_safe_obstacle_distance(v_ego, t_follow, stop_distance) - get_stopped_equivalence_factor(v_lead, v_ego)
+  return max(0.0, get_safe_obstacle_distance(v_ego, t_follow, stop_distance) - get_stopped_equivalence_factor(v_lead, v_ego))
 
 
 def gen_long_model():
