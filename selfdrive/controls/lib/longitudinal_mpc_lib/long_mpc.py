@@ -496,7 +496,7 @@ class LongitudinalMpc:
       if speed_kph < 50:
         self.source = 'e2e' if x_and_cruise[1,0] > x_and_cruise[1,1] else 'cruise' # 當 e2e 預測距離較 cruise 超前 10% 時，才真正採用 e2e 軌跡。這個閾值越低，越容易觸發 e2e 跟隨，其激進程度也越可能推高轉速。
       else:
-        self.source = 'e2e' if x_and_cruise[1,0] < x_and_cruise[1,1] else 'cruise'
+        self.source = 'e2e' if x_and_cruise[1,0] < 0.9 * x_and_cruise[1,1] else 'cruise'
 
       #if speed_kph < 60:
         #self.source = 'e2e'
