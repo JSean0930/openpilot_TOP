@@ -47,7 +47,7 @@ V_EGO_COST = 1.0  # 適度權重於自車速度
 A_EGO_COST = 5.0  # 對加速度施加小懲罰以平滑動作曲線
 J_EGO_COST = 3.0  # 降低 jerk 懲罰以提高反應靈敏度
 A_CHANGE_COST = 175.  # 降低以提供更大加速自由度
-DANGER_ZONE_COST = 350. #100.
+#DANGER_ZONE_COST = 350. #100.
 CRASH_DISTANCE = .25
 LEAD_DANGER_FACTOR = 0.75
 LIMIT_COST = 1e6
@@ -70,6 +70,10 @@ COMFORT_BRAKE = 2.5
 CRUISE_MIN_ACCEL = -1.2
 CRUISE_MAX_ACCEL = 1.6
 speed_kph = v_ego * 3.6
+
+def get_danger_zone_cost(v_ego):
+  # 線性插值：0 m/s → 100，33.3 m/s (120 km/h) → 300
+  return np.interp(speed_kph, [0.0, 120.0], [100.0, 350.0])
 
 def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
