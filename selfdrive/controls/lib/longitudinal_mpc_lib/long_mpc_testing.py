@@ -72,7 +72,7 @@ CRUISE_MAX_ACCEL = 1.6
 
 def get_danger_zone_cost(v_ego):
   # 線性插值：0 m/s → 100，33.3 m/s (120 km/h) → 300
-  return np.interp(v_ego, [0.0, 33.3], [100.0, 350.0])
+  return np.interp(v_ego, [0.0, 16.67], [100.0, 350.0])
 
 def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
