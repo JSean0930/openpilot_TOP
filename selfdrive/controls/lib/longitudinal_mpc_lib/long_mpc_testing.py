@@ -69,7 +69,6 @@ COMFORT_BRAKE = 2.5
 # STOP_DISTANCE = 6.0
 CRUISE_MIN_ACCEL = -1.2
 CRUISE_MAX_ACCEL = 1.6
-speed_kph = v_ego * 3.6
 
 def get_danger_zone_cost(v_ego):
   # 線性插值：0 m/s → 100，33.3 m/s (120 km/h) → 300
@@ -407,6 +406,7 @@ class LongitudinalMpc:
   def update(self, radarstate, v_cruise, x, v, a, j, personality=log.LongitudinalPersonality.standard, dynamic_follow=False):
     t_follow = get_T_FOLLOW(personality)
     v_ego = self.x0[1]
+    speed_kph = v_ego * 3.6
     # 1. 動態算出時間節點
     #T_IDXS_loc = compute_T_IDXS(v_ego)
     #T_DIFFS_loc = np.diff(T_IDXS, prepend=[0.])
