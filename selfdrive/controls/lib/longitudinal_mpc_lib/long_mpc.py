@@ -450,7 +450,7 @@ class LongitudinalMpc:
       x[:], v[:], a[:], j[:] = 0.0, 0.0, 0.0, 0.0
 
     elif self.mode == 'blended':
-      self.params[:,5] = 1.0
+      self.params[:,5] = LEAD_DANGER_FACTOR #1.0
       
       v_lower = v_ego + (T_IDXS * CRUISE_MIN_ACCEL * 0.95) # *越大,減速越保守
       # TODO does this make sense when max_a is negative?
