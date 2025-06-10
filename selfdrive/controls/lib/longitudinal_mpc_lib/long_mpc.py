@@ -72,7 +72,7 @@ CRUISE_MAX_ACCEL = 1.6
 
 def get_danger_zone_cost(v_ego):
   # 線性插值：0 m/s → 100，33.3 m/s (120 km/h) → 300
-  return np.interp(v_ego, [0.0, 16.67], [100.0, 350.0])
+  return np.interp(v_ego, [0.0, 16.67], [100.0, 450.0])
 
 def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
@@ -494,9 +494,12 @@ class LongitudinalMpc:
       #==========================================================================
       # 若 e2e 比 cruise 明顯遠，才使用 e2e 作為來源
       if speed_kph < 50:
-        self.source = 'e2e' if x_and_cruise[1,0] > x_and_cruise[1,1] else 'cruise' # 當 e2e 預測距離較 cruise 超前 10% 時，才真正採用 e2e 軌跡。這個閾值越低，越容易觸發 e2e 跟隨，其激進程度也越可能推高轉速。
+        if x_and_cruise[1,0] > 1.1 * x_and_cruise[1,1] or x_and_cruise[1,0] < 0.9 * x_and_cruise[1,1]:
+          self.source = 'e2e'
+        else:
+          self.source = 'cruise'
       else:
-        self.source = 'e2e' if x_and_cruise[1,0] < 0.9 * x_and_cruise[1,1] else 'cruise'
+        self.source = 'cruise'
 
       #if speed_kph < 60:
         #self.source = 'e2e'
