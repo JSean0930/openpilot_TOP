@@ -49,7 +49,7 @@ J_EGO_COST = 3.0  # 降低 jerk 懲罰以提高反應靈敏度
 A_CHANGE_COST = 175.  # 降低以提供更大加速自由度
 #DANGER_ZONE_COST = 350. #100.
 CRASH_DISTANCE = .25
-LEAD_DANGER_FACTOR = 0.75
+#LEAD_DANGER_FACTOR = 0.75
 LIMIT_COST = 1e6
 NUMERIC_EPS = 1e-4  # 小數值以避免除以零或數值不穩定
 ACADOS_SOLVER_TYPE = 'SQP_RTI'
@@ -73,6 +73,10 @@ CRUISE_MAX_ACCEL = 1.6
 def get_danger_zone_cost(v_ego):
   # 線性插值：0 m/s → 100，33.3 m/s (120 km/h) → 300
   return np.interp(v_ego, [0.0, 16.67], [100.0, 450.0])
+
+def get_lead_danger_factor(v_ego):
+  # 線性插值：0 m/s → 1.0，33.3 m/s (120 km/h) → 1.5
+  return np.interp(v_ego, [0.0, 33.3], [1.1, 1.6])
 
 def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
@@ -432,7 +436,7 @@ class LongitudinalMpc:
 
     # Update in ACC mode or ACC/e2e blend
     if self.mode == 'acc':
-      self.params[:,5] = LEAD_DANGER_FACTOR
+      self.params[:,5] = get_lead_danger_factor(v_ego)
 
       # Fake an obstacle for cruise, this ensures smooth acceleration to set speed
       # when the leads are no factor.
@@ -450,7 +454,7 @@ class LongitudinalMpc:
       x[:], v[:], a[:], j[:] = 0.0, 0.0, 0.0, 0.0
 
     elif self.mode == 'blended':
-      self.params[:,5] = LEAD_DANGER_FACTOR #1.0
+      self.params[:,5] = get_lead_danger_factor(v_ego) #1.0
       
       v_lower = v_ego + (T_IDXS * CRUISE_MIN_ACCEL * 0.95) # *越大,減速越保守
       # TODO does this make sense when max_a is negative?
