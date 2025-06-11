@@ -498,7 +498,7 @@ class LongitudinalMpc:
       #==========================================================================
       # 若 e2e 比 cruise 明顯遠，才使用 e2e 作為來源
       if speed_kph < 60:
-        if x_and_cruise[1,0] > 1.1 * x_and_cruise[1,1] or x_and_cruise[1,0] < 0.9 * x_and_cruise[1,1]:
+        if x_and_cruise[1,0] > 1.1 * x_and_cruise[1,1]:
           self.source = 'e2e'
         else:
           self.source = 'cruise'
