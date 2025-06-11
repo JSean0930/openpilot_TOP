@@ -374,7 +374,6 @@ class LongitudinalMpc:
   @staticmethod
   def extrapolate_lead(x_lead, v_lead, a_lead, a_lead_tau):
     a_lead_traj = a_lead * np.exp(-a_lead_tau * (T_IDXS**2)/2.)
-    #a_lead_traj = a_lead * np.exp(-T_DIFFS.cumsum() / a_lead_tau)
     v_lead_traj = np.clip(v_lead + np.cumsum(T_DIFFS * a_lead_traj), 0.0, 1e8)
     x_lead_traj = x_lead + np.cumsum(T_DIFFS * v_lead_traj)
     lead_xv = np.column_stack((x_lead_traj, v_lead_traj))
@@ -407,9 +406,7 @@ class LongitudinalMpc:
     t_follow = get_T_FOLLOW(personality)
     v_ego = self.x0[1]
     speed_kph = v_ego * 3.6
-    # 1. 動態算出時間節點
-    #T_IDXS_loc = compute_T_IDXS(v_ego)
-    #T_DIFFS_loc = np.diff(T_IDXS, prepend=[0.])
+    
     t_follow = get_T_FOLLOW(personality) if not dynamic_follow else get_dynamic_follow(v_ego, personality)
     stop_distance = get_STOP_DISTANCE(personality)
 
