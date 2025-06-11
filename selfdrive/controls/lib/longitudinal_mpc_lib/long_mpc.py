@@ -463,20 +463,7 @@ class LongitudinalMpc:
       #x_obstacles = np.column_stack([lead_0_obstacle, lead_1_obstacle])
       # cruise 目標距離
       cruise_target = T_IDXS * np.clip(v_cruise, v_ego - 2.0, 1e3) + x[0] # *1.0是放大係數（可改為 >1.0 讓巡航更激進，或 <1.0 更保守），下限 v_ego - 2.0 決定了當車速高於目標時是否允許輕微減速。
-      # —— 1) 動態縮減巡航速度 ——
-      #if speed_kph > 90:
-        #scale = np.interp(speed_kph, [90, 120], [1.0, 0.7])
-      #else:
-        #scale = 1
-        
-      #adj_v_cruise = v_cruise * scale
-
-      # —— 2) 純巡航軌跡 + 安全距離限制 ——
-      #cruise_base = T_IDXS * np.clip(v_cruise, v_ego - 2.0, 1e3) + x[0]
-      # 計算安全跟車距
-      #safe_dist = desired_follow_distance(v_ego, v_lead, t_follow)
-      #lead_pos0 = np.min([lead_0_obstacle[0], lead_1_obstacle[0]])
-      #cruise_target = np.minimum(cruise_base, lead_pos0 - safe_dist)
+      
       #=======================================================================
       # e2e 預測距離
       xforward = ((v[1:] + v[:-1]) / 2) * (T_IDXS[1:] - T_IDXS[:-1]) 
@@ -485,26 +472,34 @@ class LongitudinalMpc:
       # 混合 e2e 和 cruise，根據速度平滑插值
       x_and_cruise = np.column_stack([x * 1.0, cruise_target]) # 將 e2e 預測距離額外乘以 0.95，會讓 e2e 軌跡對加速目標略顯保守。數值越接近 1，e2e 的影響越大；越小，則更偏向 cruise，進而影響加速決策和引擎轉速。
       #x = np.max(x_and_cruise, axis=1)
-      #計算速度加權：低速偏 e2e，高速偏 cruise
-      w = np.clip((speed_kph - 20.0) / 100.0, 0.0, 0.5)  #15
-      # 高速時再衰減
-      #decay = np.interp(speed_kph, [100, 140], [1.0, 0.5])
-      #w *= decay
-      x = (1 - w) * np.min(x_and_cruise, axis=1) + w * np.max(x_and_cruise, axis=1)
       #==========================================================================
+      #計算速度加權：低速偏 e2e，高速偏 cruise
+      #w = np.clip((speed_kph - 20.0) / 100.0, 0.0, 0.5)  #15
+      #x = (1 - w) * np.min(x_and_cruise, axis=1) + w * np.max(x_and_cruise, axis=1)
+      
       # 若 e2e 比 cruise 明顯遠，才使用 e2e 作為來源
-      if speed_kph < 60:
-        if x_and_cruise[1,0] > 1.1 * x_and_cruise[1,1]:
-          self.source = 'e2e'
-        else:
-          self.source = 'cruise'
-      else:
-        self.source = 'cruise'
-
       #if speed_kph < 60:
-        #self.source = 'e2e'
+        #if x_and_cruise[1,0] > 1.1 * x_and_cruise[1,1]:
+          #self.source = 'e2e'
+        #else:
+          #self.source = 'cruise'
       #else:
         #self.source = 'cruise'
+      #=========================================================================
+      ratio = x_and_cruise[1,0] / (x_and_cruise[1,1] + 1e-6)
+      delta = abs(ratio - 1.0)
+      raw_w = np.clip(delta / 0.1, 0.0, 1.0)
+      self.prev_w_e2e = 0.8 * self.prev_w_e2e + 0.2 * raw_w
+      w_e2e = self.prev_w_e2e
+      speed_factor = np.clip(1.0 - (speed_kph - 40.0)/60.0, 0.0, 1.0)
+      w_e2e *= speed_factor
+
+      x = w_e2e * x_and_cruise[:,0] + (1 - w_e2e) * x_and_cruise[:,1]
+      # hysteresis-based source stability
+      if self.source == 'e2e' and ratio < 0.95:
+        self.source = 'cruise'
+      elif self.source == 'cruise' and ratio > 1.05:
+        self.source = 'e2e'      
 
     else:
       raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner update')
