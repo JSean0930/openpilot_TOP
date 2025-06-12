@@ -284,6 +284,8 @@ def gen_long_ocp():
 
 class LongitudinalMpc:
   def __init__(self, CP, mode='acc', dt=DT_MDL):
+    self.prev_w_e2e = 0.0
+    self.prev_w_e2e_initialized = False
     self.CP = CP
     self.mode = mode
     self.dt = dt
