@@ -486,7 +486,16 @@ class LongitudinalMpc:
       ratio = x_and_cruise[1,0] / (x_and_cruise[1,1] + 1e-6)
       delta = abs(ratio - 1.0)
       raw_w = np.clip(delta / 0.1, 0.0, 1.0)
-      self.prev_w_e2e = 0.8 * self.prev_w_e2e + 0.2 * raw_w
+
+      
+
+      if not self.prev_w_e2e_initialized:
+        self.prev_w_e2e = raw_w
+        self.prev_w_e2e_initialized = True
+      else:
+        alpha = 0.8
+        self.prev_w_e2e = alpha * self.prev_w_e2e + (1 - alpha) * raw_w
+
       w_e2e = self.prev_w_e2e
       speed_factor = np.clip(1.0 - (speed_kph - 40.0)/60.0, 0.0, 1.0)
       w_e2e *= speed_factor
