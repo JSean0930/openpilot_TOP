@@ -361,8 +361,8 @@ class LongitudinalMpc:
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, danger_cost]
     elif self.mode == 'blended':
       a_change_cost = 150.0 if prev_accel_constraint else 0
-      #cost_weights = [2., 1.0, 1.0, 5.0, a_change_cost * a_change_v_ego, 1.0]
-      cost_weights = [X_EGO_OBSTACLE_COST, X_EGO_COST, V_EGO_COST, A_EGO_COST, jerk_factor * a_change_cost * a_change_v_ego, jerk_factor * J_EGO_COST * j_ego_v_ego]
+      cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 1.0]
+      #cost_weights = [X_EGO_OBSTACLE_COST, X_EGO_COST, V_EGO_COST, A_EGO_COST, jerk_factor * a_change_cost * a_change_v_ego, jerk_factor * J_EGO_COST * j_ego_v_ego]
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, danger_cost]
     else:
       raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner cost set')
@@ -453,16 +453,7 @@ class LongitudinalMpc:
 
     elif self.mode == 'blended':
       self.params[:,5] = LEAD_DANGER_FACTOR
-      
-      v_lower = v_ego + (T_IDXS * CRUISE_MIN_ACCEL * 0.95) # *越大,減速越保守
-      # TODO does this make sense when max_a is negative?
-      v_upper = v_ego + (T_IDXS * CRUISE_MAX_ACCEL * 0.9) # *越大,加速越激進
-      v_cruise_clipped = np.clip(v_cruise * np.ones(N+1),
-                                 v_lower,
-                                 v_upper)
-      cruise_obstacle = np.cumsum(T_DIFFS * v_cruise_clipped) + get_safe_obstacle_distance(v_cruise_clipped, t_follow, stop_distance)
-      x_obstacles = np.column_stack([lead_0_obstacle, lead_1_obstacle, cruise_obstacle])
-      #x_obstacles = np.column_stack([lead_0_obstacle, lead_1_obstacle])
+      x_obstacles = np.column_stack([lead_0_obstacle, lead_1_obstacle])
       # cruise 目標距離
       cruise_target = T_IDXS * np.clip(v_cruise, v_ego - 2.0, 1e3) + x[0] # *1.0是放大係數（可改為 >1.0 讓巡航更激進，或 <1.0 更保守），下限 v_ego - 2.0 決定了當車速高於目標時是否允許輕微減速。
       
