@@ -314,6 +314,9 @@ class LongitudinalMpc:
     self.status = False
     self.crash_cnt = 0.0
     self.solution_status = 0
+
+    self.prev_w_e2e = 0.0
+    self.prev_w_e2e_initialized = False
     # timers
     self.solve_time = 0.0
     self.time_qp_solution = 0.0
