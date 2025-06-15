@@ -40,7 +40,7 @@ V_EGO_COST = 1.0  # 適度權重於自車速度
 A_EGO_COST = 0.5  # 對加速度施加小懲罰以平滑動作曲線
 J_EGO_COST = 3.0  # 降低 jerk 懲罰以提高反應靈敏度
 A_CHANGE_COST = 150.  # 降低以提供更大加速自由度
-DANGER_ZONE_COST = 100.
+DANGER_ZONE_COST = 300.
 CRASH_DISTANCE = .25
 LEAD_DANGER_FACTOR = 0.75
 LIMIT_COST = 1e6
@@ -461,9 +461,9 @@ class LongitudinalMpc:
       e2e_dist = x_e2e[1]
       cruise_dist = cruise_target[1]
       if self.source == 'e2e':
-        self.source = 'e2e' if e2e_dist > cruise_dist * 0.95 else 'cruise'
+        self.source = 'e2e' if e2e_dist > cruise_dist * 0.9 else 'cruise'
       else:
-        self.source = 'e2e' if e2e_dist > cruise_dist * 1.05 else 'cruise'
+        self.source = 'e2e' if e2e_dist > cruise_dist * 1.1 else 'cruise'
     else:
       raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner update')
 
