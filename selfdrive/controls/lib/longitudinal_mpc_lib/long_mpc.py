@@ -354,7 +354,7 @@ class LongitudinalMpc:
       cost_weights = [X_EGO_OBSTACLE_COST, X_EGO_COST, V_EGO_COST, A_EGO_COST, jerk_factor * a_change_cost * a_change_v_ego, jerk_factor * J_EGO_COST * j_ego_v_ego]
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, DANGER_ZONE_COST]
     elif self.mode == 'blended':
-      a_change_cost = 40.0 if prev_accel_constraint else 0
+      a_change_cost = 140.0 if prev_accel_constraint else 0
       cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 1.0]
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, DANGER_ZONE_COST]
     else:
@@ -371,8 +371,8 @@ class LongitudinalMpc:
 
   @staticmethod
   def extrapolate_lead(x_lead, v_lead, a_lead, a_lead_tau):
-    #a_lead_traj = a_lead * np.exp(-a_lead_tau * (T_IDXS**2)/2.)
-    a_lead_traj = a_lead * np.exp(-T_IDXS / a_lead_tau)
+    a_lead_traj = a_lead * np.exp(-a_lead_tau * (T_IDXS**2)/2.)
+    #a_lead_traj = a_lead * np.exp(-T_IDXS / a_lead_tau)
     v_lead_traj = np.clip(v_lead + np.cumsum(T_DIFFS * a_lead_traj), 0.0, 1e8)
     x_lead_traj = x_lead + np.cumsum(T_DIFFS * v_lead_traj)
     lead_xv = np.column_stack((x_lead_traj, v_lead_traj))
@@ -424,7 +424,7 @@ class LongitudinalMpc:
     self.params[:,1] = ACCEL_MAX
 
     if self.mode == 'acc':
-      self.params[:,5] = LEAD_DANGER_FACTOR * 0.8
+      self.params[:,5] = LEAD_DANGER_FACTOR
       v_lower = v_ego + (T_IDXS * CRUISE_MIN_ACCEL * 0.95)
       v_upper = v_ego + (T_IDXS * CRUISE_MAX_ACCEL * 0.9)
       v_cruise_clipped = np.clip(v_cruise * np.ones(N+1), v_lower, v_upper)
@@ -443,7 +443,7 @@ class LongitudinalMpc:
       
       # e2e 預測距離
       xforward = ((v[1:] + v[:-1]) / 2) * (T_IDXS[1:] - T_IDXS[:-1])
-      x_e2e = np.cumsum(np.insert(xforward, 0, x[0])) * 0.95 # 將 e2e 預測距離額外乘以 0.95，會讓 e2e 軌跡對加速目標略顯保守。數值越接近 1，e2e 的影響越大；越小，則更偏向 cruise，進而影響加速決策和引擎轉速。
+      x_e2e = np.cumsum(np.insert(xforward, 0, x[0])) # 將 e2e 預測距離額外乘以 0.95，會讓 e2e 軌跡對加速目標略顯保守。數值越接近 1，e2e 的影響越大；越小，則更偏向 cruise，進而影響加速決策和引擎轉速。
       # 混合 e2e 和 cruise，根據速度平滑插值
       v_low, v_high = 5.0, 15.0
       w = np.clip((v_ego - v_low) / (v_high - v_low), 0.0, 1.0)
