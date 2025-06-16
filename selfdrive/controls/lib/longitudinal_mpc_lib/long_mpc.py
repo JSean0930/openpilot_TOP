@@ -65,7 +65,7 @@ CRUISE_MAX_ACCEL = 1.6
 
 def get_danger_zone_cost(v_ego):
   # 線性插值：0 m/s → 100，33.3 m/s (120 km/h) → 300
-  return np.interp(v_ego, [0.0, 33.33], [130.0, 650.0])
+  return np.interp(v_ego, [0.0, 33.33], [150.0, 1000.0])
 
 def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
@@ -80,7 +80,7 @@ def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
 
 def get_T_FOLLOW(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
-    return 1.45
+    return 2.5#1.45
   elif personality==log.LongitudinalPersonality.standard:
     return 1.35
   elif personality==log.LongitudinalPersonality.aggressive:
@@ -452,7 +452,7 @@ class LongitudinalMpc:
       xforward = ((v[1:] + v[:-1]) / 2) * (T_IDXS[1:] - T_IDXS[:-1])
       x_e2e = np.cumsum(np.insert(xforward, 0, x[0])) # 將 e2e 預測距離額外乘以 0.95，會讓 e2e 軌跡對加速目標略顯保守。數值越接近 1，e2e 的影響越大；越小，則更偏向 cruise，進而影響加速決策和引擎轉速。
       # 混合 e2e 和 cruise，根據速度平滑插值
-      v_low, v_high = 5.0, 15.0
+      #v_low, v_high = 5.0, 15.0
       #w = np.clip((v_ego - v_low) / (v_high - v_low), 0.0, 1.0)
       #x_mixed = (1 - w) * np.minimum(x_e2e, cruise_target) + w * np.maximum(x_e2e, cruise_target)
       x_mixed = 0.8 * np.minimum(x_e2e, cruise_target) + 0.2 * np.maximum(x_e2e, cruise_target)
