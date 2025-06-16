@@ -65,7 +65,10 @@ CRUISE_MAX_ACCEL = 1.6
 
 def get_danger_zone_cost(v_ego):
   # 線性插值：0 m/s → 100，33.3 m/s (120 km/h) → 300
-  return np.interp(v_ego, [0.0, 33.33], [150.0, 1000.0])
+  return np.interp(v_ego, [0.0, 33.33], [150.0, 600.0])
+
+def get_lead_danger_factor(v_ego):
+  return np.interp(v_ego, [0.0, 33.3], [1.0, 1.5])  # 線性插值，隨速度提升危險因子增加
 
 def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
@@ -431,7 +434,8 @@ class LongitudinalMpc:
     self.params[:,1] = ACCEL_MAX
 
     if self.mode == 'acc':
-      self.params[:,5] = LEAD_DANGER_FACTOR
+      danger_factor = get_lead_danger_factor(v_ego)
+      self.params[:,5] = danger_factor
       v_lower = v_ego + (T_IDXS * CRUISE_MIN_ACCEL * 0.95)
       v_upper = v_ego + (T_IDXS * CRUISE_MAX_ACCEL * 0.9)
       v_cruise_clipped = np.clip(v_cruise * np.ones(N+1), v_lower, v_upper)
@@ -442,7 +446,8 @@ class LongitudinalMpc:
       x[:], v[:], a[:], j[:] = 0.0, 0.0, 0.0, 0.0
 
     elif self.mode == 'blended':
-      self.params[:,5] = LEAD_DANGER_FACTOR
+      danger_factor = get_lead_danger_factor(v_ego)
+      self.params[:,5] = danger_factor
       x_obstacles = np.column_stack([lead_0_obstacle, lead_1_obstacle])
       
       # cruise 目標距離（略為積極）
