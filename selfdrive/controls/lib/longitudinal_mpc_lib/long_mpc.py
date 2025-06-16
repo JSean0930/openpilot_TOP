@@ -65,10 +65,18 @@ CRUISE_MAX_ACCEL = 1.6
 
 def get_danger_zone_cost(v_ego):
   # 線性插值：0 m/s → 100，33.3 m/s (120 km/h) → 300
-  return np.interp(v_ego, [0.0, 33.33], [150.0, 600.0])
+  return np.interp(v_ego, [0.0, 33.33], [120.0, 700.0])
+
+#def get_lead_danger_factor(v_ego):
+  #return np.interp(v_ego, [0.0, 33.3], [1.0, 1.5])  # 線性插值，隨速度提升危險因子增加
 
 def get_lead_danger_factor(v_ego):
-  return np.interp(v_ego, [0.0, 33.3], [1.0, 1.5])  # 線性插值，隨速度提升危險因子增加
+  if v_ego <= 13.89:
+    return 1.1
+  elif v_ego <= 22.22:
+    return 1.4
+  else:
+    return 1.7
 
 def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
@@ -433,15 +441,6 @@ class LongitudinalMpc:
     lead_0_obstacle = lead_xv_0[:,0] + get_stopped_equivalence_factor(lead_xv_0[:,1], v_ego)
     lead_1_obstacle = lead_xv_1[:,0] + get_stopped_equivalence_factor(lead_xv_1[:,1], v_ego)
 
-    # 限制 lead obstacle 不可小於安全追車距離（避免逼近）
-    lead_v0 = lead_xv_0[:,1]
-    min_safe_dist_0 = desired_follow_distance(v_ego, lead_v0)
-    lead_0_obstacle = np.maximum(lead_0_obstacle, self.x0[0] + min_safe_dist_0)
-    
-    lead_v1 = lead_xv_1[:,1]
-    min_safe_dist_1 = desired_follow_distance(v_ego, lead_v1)
-    lead_1_obstacle = np.maximum(lead_1_obstacle, self.x0[0] + min_safe_dist_1)
-
     self.params[:,0] = ACCEL_MIN
     self.params[:,1] = ACCEL_MAX
 
@@ -472,7 +471,7 @@ class LongitudinalMpc:
       #v_low, v_high = 5.0, 15.0
       #w = np.clip((v_ego - v_low) / (v_high - v_low), 0.0, 1.0)
       #x_mixed = (1 - w) * np.minimum(x_e2e, cruise_target) + w * np.maximum(x_e2e, cruise_target)
-      x_mixed = 0.3 * np.minimum(x_e2e, cruise_target) + 0.7 * np.maximum(x_e2e, cruise_target)
+      x_mixed = 0.7 * np.minimum(x_e2e, cruise_target) + 0.3 * np.maximum(x_e2e, cruise_target)
       x[:] = x_mixed  # 修正此行
 
       self.yref[:,1] = x
