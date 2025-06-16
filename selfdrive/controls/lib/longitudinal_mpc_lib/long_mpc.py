@@ -431,7 +431,7 @@ class LongitudinalMpc:
     
     # 模型4 原始碼（整合 lead obstacle 最小安全距離保護
     lead_0_obstacle = lead_xv_0[:,0] + get_stopped_equivalence_factor(lead_xv_0[:,1], v_ego)
-    lead_1_obstacle = lead_xv_1[:,0] + get_stopped_equivalence_factor(lead_xv_1[:,1], v_ego)）
+    lead_1_obstacle = lead_xv_1[:,0] + get_stopped_equivalence_factor(lead_xv_1[:,1], v_ego)
 
     # 限制 lead obstacle 不可小於安全追車距離（避免逼近）
     lead_v0 = lead_xv_0[:,1]
