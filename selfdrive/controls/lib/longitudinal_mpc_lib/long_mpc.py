@@ -63,6 +63,10 @@ COMFORT_BRAKE = 2.5
 CRUISE_MIN_ACCEL = -1.2
 CRUISE_MAX_ACCEL = 1.6
 
+def get_danger_zone_cost(v_ego):
+  # 線性插值：0 m/s → 100，33.3 m/s (120 km/h) → 300
+  return np.interp(v_ego, [0.0, 33.33], [120.0, 650.0])
+
 def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
     return 1.0
