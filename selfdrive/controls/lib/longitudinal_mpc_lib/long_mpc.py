@@ -428,9 +428,19 @@ class LongitudinalMpc:
 
     lead_xv_0 = self.process_lead(radarstate.leadOne)
     lead_xv_1 = self.process_lead(radarstate.leadTwo)
-
+    
+    # 模型4 原始碼（整合 lead obstacle 最小安全距離保護
     lead_0_obstacle = lead_xv_0[:,0] + get_stopped_equivalence_factor(lead_xv_0[:,1], v_ego)
-    lead_1_obstacle = lead_xv_1[:,0] + get_stopped_equivalence_factor(lead_xv_1[:,1], v_ego)
+    lead_1_obstacle = lead_xv_1[:,0] + get_stopped_equivalence_factor(lead_xv_1[:,1], v_ego)）
+
+    # 限制 lead obstacle 不可小於安全追車距離（避免逼近）
+    lead_v0 = lead_xv_0[:,1]
+    min_safe_dist_0 = desired_follow_distance(v_ego, lead_v0)
+    lead_0_obstacle = np.maximum(lead_0_obstacle, self.x0[0] + min_safe_dist_0)
+    
+    lead_v1 = lead_xv_1[:,1]
+    min_safe_dist_1 = desired_follow_distance(v_ego, lead_v1)
+    lead_1_obstacle = np.maximum(lead_1_obstacle, self.x0[0] + min_safe_dist_1)
 
     self.params[:,0] = ACCEL_MIN
     self.params[:,1] = ACCEL_MAX
@@ -462,7 +472,7 @@ class LongitudinalMpc:
       #v_low, v_high = 5.0, 15.0
       #w = np.clip((v_ego - v_low) / (v_high - v_low), 0.0, 1.0)
       #x_mixed = (1 - w) * np.minimum(x_e2e, cruise_target) + w * np.maximum(x_e2e, cruise_target)
-      x_mixed = 0.8 * np.minimum(x_e2e, cruise_target) + 0.2 * np.maximum(x_e2e, cruise_target)
+      x_mixed = 0.3 * np.minimum(x_e2e, cruise_target) + 0.7 * np.maximum(x_e2e, cruise_target)
       x[:] = x_mixed  # 修正此行
 
       self.yref[:,1] = x
