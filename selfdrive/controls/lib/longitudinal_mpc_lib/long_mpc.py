@@ -67,16 +67,16 @@ def get_danger_zone_cost(v_ego):
   # 線性插值：0 m/s → 100，33.3 m/s (120 km/h) → 300
   return np.interp(v_ego, [0.0, 33.33], [150.0, 1000.0])
 
-#def get_lead_danger_factor(v_ego):
-  #return np.interp(v_ego, [0.0, 33.3], [1.0, 1.5])  # 線性插值，隨速度提升危險因子增加
-
 def get_lead_danger_factor(v_ego):
-  if v_ego <= 13.89:
-    return 1.1
-  elif v_ego <= 22.22:
-    return 1.4
-  else:
-    return 1.7
+  return np.interp(v_ego, [0.0, 33.3], [1.0, 1.4])  # 線性插值，隨速度提升危險因子增加
+
+#def get_lead_danger_factor(v_ego):
+  #if v_ego <= 13.89:
+    #return 1.1
+  #elif v_ego <= 22.22:
+    #return 1.4
+  #else:
+    #return 1.7
 
 def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
