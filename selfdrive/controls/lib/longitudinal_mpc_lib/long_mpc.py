@@ -65,14 +65,14 @@ CRUISE_MAX_ACCEL = 1.6
 
 def get_danger_zone_cost(v_ego):
   # 線性插值：0 m/s → 100，33.3 m/s (120 km/h) → 300
-  return np.interp(v_ego, [0.0, 33.33], [120.0, 400.0])
+  return np.interp(v_ego, [0.0, 33.33], [120.0, 500.0])
 
 #def get_lead_danger_factor(v_ego):
   #return np.interp(v_ego, [0.0, 33.3], [1.0, 1.4])  # 線性插值，隨速度提升危險因子增加
 
 def get_lead_danger_factor(v_ego):
   if v_ego <= 13.89:
-    return 0.8
+    return 0.85
   elif v_ego <= 22.22:
     return 1.0
   else:
