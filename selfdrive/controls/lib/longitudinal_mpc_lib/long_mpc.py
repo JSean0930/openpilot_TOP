@@ -72,11 +72,11 @@ def get_danger_zone_cost(v_ego):
 
 def get_lead_danger_factor(v_ego):
   if v_ego <= 13.89:
-    return 1.1
+    return 0.8
   elif v_ego <= 22.22:
-    return 1.25
+    return 1.0
   else:
-    return 1.35
+    return 1.1
 
 def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
