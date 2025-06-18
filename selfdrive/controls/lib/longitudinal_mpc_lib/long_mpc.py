@@ -378,7 +378,7 @@ class LongitudinalMpc:
     v_lead = v_lead0 if v_lead0 < v_lead1 else v_lead1
     relative_dist = np.clip(v_lead - v_ego, -5.0, 5.0)
 
-    j_ego_v_ego = np.interp(v_ego, [0, 10, 30], [0.3, 1.0, 1.5])       # 高速 jerk cost 高
+    j_ego_v_ego = np.interp(v_ego, [0, 10, 27.8], [0.3, 1.0, 1.5])       # 高速 jerk cost 高
     a_change_v_ego = np.interp(relative_dist, [-2.0, 0.0, 2.0], [1.2, 1.0, 0.7])  # 前車遠 → 提高靈敏度
     #========================
     danger_cost = get_danger_zone_cost(v_ego)
