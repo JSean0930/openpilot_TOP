@@ -65,7 +65,13 @@ CRUISE_MAX_ACCEL = 1.6
 
 def get_danger_zone_cost(v_ego):
   # 線性插值：0 m/s → 100，33.3 m/s (120 km/h) → 300
-  return np.interp(v_ego, [0.0, 27.78], [120.0, 500.0])
+  #return np.interp(v_ego, [0.0, 27.78], [120.0, 500.0])
+  if v_ego < 10.0:
+    return 100.0
+  elif v_ego < 15.0:
+    return np.interp(v_ego, [10.0, 19.5], [100.0, 150.0])
+  else:
+    return np.interp(v_ego, [19.5, 27.8], [150.0, 500.0])
 
 #def get_lead_danger_factor(v_ego):
   #return np.interp(v_ego, [0.0, 33.3], [1.0, 1.4])  # 線性插值，隨速度提升危險因子增加
@@ -344,7 +350,8 @@ class LongitudinalMpc:
     for i in range(N):
       # TODO don't hardcode A_CHANGE_COST idx
       # reduce the cost on (a-a_prev) later in the horizon.
-      W[4,4] = cost_weights[4] * np.interp(T_IDXS[i], [0.0, 1.0, 2.0], [1.0, 1.0, 0.0])
+      #W[4,4] = cost_weights[4] * np.interp(T_IDXS[i], [0.0, 1.0, 2.0], [1.0, 1.0, 0.0])
+      W[4,4] = cost_weights[4] * np.interp(T_IDXS[i], [0.0, 2.0, 4.0], [1.0, 0.5, 0.0])
       self.solver.cost_set(i, 'W', W)
     # Setting the slice without the copy make the array not contiguous,
     # causing issues with the C interface.
@@ -467,6 +474,9 @@ class LongitudinalMpc:
       # e2e 預測距離
       xforward = ((v[1:] + v[:-1]) / 2) * (T_IDXS[1:] - T_IDXS[:-1])
       x_e2e = np.cumsum(np.insert(xforward, 0, x[0])) # 將 e2e 預測距離額外乘以 0.95，會讓 e2e 軌跡對加速目標略顯保守。數值越接近 1，e2e 的影響越大；越小，則更偏向 cruise，進而影響加速決策和引擎轉速。
+      #平滑濾波
+      self.x_e2e_smooth = 0.8 * self.x_e2e_smooth + 0.2 * x_e2e if hasattr(self, "x_e2e_smooth") else x_e2e.copy()
+      x_e2e = self.x_e2e_smooth
       # 混合 e2e 和 cruise，根據速度平滑插值
       v_low, v_high = 5.0, 15.0
       w = np.clip((v_ego - v_low) / (v_high - v_low), 0.0, 0.5)
