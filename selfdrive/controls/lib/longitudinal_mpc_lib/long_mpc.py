@@ -68,7 +68,7 @@ def get_danger_zone_cost(v_ego):
   #return np.interp(v_ego, [0.0, 27.78], [120.0, 500.0])
   if v_ego < 10.0:
     return 100.0
-  elif v_ego < 15.0:
+  elif v_ego < 19.5:
     return np.interp(v_ego, [10.0, 19.5], [100.0, 150.0])
   else:
     return np.interp(v_ego, [19.5, 27.8], [150.0, 500.0])
