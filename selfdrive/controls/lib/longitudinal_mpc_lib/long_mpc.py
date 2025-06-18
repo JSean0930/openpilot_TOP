@@ -365,15 +365,22 @@ class LongitudinalMpc:
   def set_weights(self, prev_accel_constraint=True, personality=log.LongitudinalPersonality.standard, v_lead0=0, v_lead1=0):
     jerk_factor = get_jerk_factor(personality)
     v_ego = self.x0[1]
-    v_ego_bps = [0, 10]
+    #========================
+    #v_ego_bps = [0, 10]
     # KRKeegan adjustments to improve sluggish acceleration
     # do not apply to deceleration
-    j_ego_v_ego = 1
-    a_change_v_ego = 1
-    if (v_lead0 - v_ego >= 0) and (v_lead1 - v_ego >= 0):
-      j_ego_v_ego = np.interp(v_ego, v_ego_bps, [.10, 1.])
-      a_change_v_ego = np.interp(v_ego, v_ego_bps, [.10, 1.])
+    #j_ego_v_ego = 1
+    #a_change_v_ego = 1
+    #if (v_lead0 - v_ego >= 0) and (v_lead1 - v_ego >= 0):
+      #j_ego_v_ego = np.interp(v_ego, v_ego_bps, [.10, 1.])
+      #a_change_v_ego = np.interp(v_ego, v_ego_bps, [.10, 1.])
+    #========================
+    v_lead = v_lead0 if v_lead0 < v_lead1 else v_lead1
+    relative_dist = np.clip(v_lead - v_ego, -5.0, 5.0)
 
+    j_ego_v_ego = np.interp(v_ego, [0, 10, 30], [0.3, 1.0, 1.5])       # 高速 jerk cost 高
+    a_change_v_ego = np.interp(relative_dist, [-2.0, 0.0, 2.0], [1.2, 1.0, 0.7])  # 前車遠 → 提高靈敏度
+    #========================
     danger_cost = get_danger_zone_cost(v_ego)
     
     if self.mode == 'acc':
@@ -382,7 +389,8 @@ class LongitudinalMpc:
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, danger_cost]
     elif self.mode == 'blended':
       a_change_cost = 150.0 if prev_accel_constraint else 0
-      cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 1.0]
+      #cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 1.0]
+      cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 1.0 * j_ego_v_ego]
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, danger_cost]
     else:
       raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner cost set')
