@@ -420,6 +420,7 @@ class LongitudinalMpc:
       v_lead = np.nan_to_num(lead.vLead, nan=0.0)
       a_lead = np.nan_to_num(lead.aLeadK, nan=0.0)
       a_lead_tau = np.nan_to_num(lead.aLeadTau, nan=_LEAD_ACCEL_TAU)
+      a_lead_tau = np.clip(a_lead_tau, 1e-2, 10.0)
     else:
       # Fake a fast lead car, so MPC can keep running in the same mode
       x_lead = 50.0
