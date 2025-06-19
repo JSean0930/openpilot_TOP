@@ -408,14 +408,14 @@ class LongitudinalMpc:
   def extrapolate_lead(x_lead, v_lead, a_lead, a_lead_tau):
     #a_lead_traj = a_lead * np.exp(-a_lead_tau * (T_IDXS**2)/2.) #靈敏的高斯模型
     #a_lead_traj = a_lead * np.exp(-T_IDXS / a_lead_tau) #穩定的一階衰減模型
-    
+    #=====================
     v_ego = 0.0  # 預設值，建議你從外部呼叫時傳入正確值
     # 設定切換門檻
     if v_ego < 10.0:  # 約 36 km/h 以下
       a_lead_traj = a_lead * np.exp(-a_lead_tau * (T_IDXS**2) / 2.) # 高靈敏度：近似高斯模型
     else:
       a_lead_traj = a_lead * np.exp(-T_IDXS / a_lead_tau) # 穩定模式：一階指數衰減
-
+    #======================要碼掉，同時要將line446 -> 445
     v_lead_traj = np.clip(v_lead + np.cumsum(T_DIFFS * a_lead_traj), 0.0, 1e8)
     x_lead_traj = x_lead + np.cumsum(T_DIFFS * v_lead_traj)
     lead_xv = np.column_stack((x_lead_traj, v_lead_traj))
@@ -442,7 +442,8 @@ class LongitudinalMpc:
     v_lead = np.clip(v_lead, 0.0, 1e8)
     a_lead = np.clip(a_lead, -10., 5.)
 
-    lead_xv = self.extrapolate_lead(x_lead, v_lead, a_lead, a_lead_tau)
+    #lead_xv = self.extrapolate_lead(x_lead, v_lead, a_lead, a_lead_tau)
+    lead_xv = self.extrapolate_lead(x_lead, v_lead, a_lead, a_lead_tau, v_ego)
     return lead_xv
 
   def update(self, radarstate, v_cruise, x, v, a, j, personality=log.LongitudinalPersonality.standard, dynamic_follow=False):
