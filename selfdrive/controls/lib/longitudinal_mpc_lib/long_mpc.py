@@ -67,9 +67,9 @@ def get_danger_zone_cost(v_ego):
   # 線性插值：0 m/s → 100，33.3 m/s (120 km/h) → 300
   #return np.interp(v_ego, [0.0, 27.78], [120.0, 500.0])
   if v_ego < 10.0:
-    return 140.0
+    return 120.0
   elif v_ego < 19.5:
-    return np.interp(v_ego, [10.0, 19.5], [140.0, 200.0])
+    return np.interp(v_ego, [10.0, 19.5], [120.0, 200.0])
   else:
     return np.interp(v_ego, [19.5, 27.8], [200.0, 500.0])
 
@@ -78,7 +78,7 @@ def get_danger_zone_cost(v_ego):
 
 def get_lead_danger_factor(v_ego):
   if v_ego <= 13.89:
-    return 0.9
+    return 0.85
   elif v_ego <= 22.22:
     return 1.0
   else:
@@ -97,11 +97,11 @@ def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
 
 def get_T_FOLLOW(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
-    return 1.45
+    return 1.3
   elif personality==log.LongitudinalPersonality.standard:
-    return 1.35
+    return 1.2
   elif personality==log.LongitudinalPersonality.aggressive:
-    return 1.25
+    return 1.0
   else:
     raise NotImplementedError("Longitudinal personality not supported")
 
@@ -127,8 +127,8 @@ def get_adaptive_T_FOLLOW(v_ego, a_lead, personality=log.LongitudinalPersonality
 
   # 當前車有明顯減速時，額外增加安全距離
   if a_lead < -0.5:
-    # 增加最多 0.5 秒追車時距，視前車減速度線性調整
-    extra_t_follow = np.clip(-0.3 * a_lead, 0.0, 0.5)
+    # 增加最多0.3秒追車時距，視前車減速度線性調整
+    extra_t_follow = np.clip(-0.3 * a_lead, 0.0, 0.3)
     base_t_follow += extra_t_follow
 
   return base_t_follow
@@ -148,8 +148,8 @@ def get_stopped_equivalence_factor(v_lead, v_ego):
   # KRKeegan this offset rapidly decreases the following distance when the lead pulls
   # away, resulting in an early demand for acceleration.
   v_diff_offset = 0
-  v_diff_offset_max = 5 #12
-  speed_to_reach_max_v_diff_offset = 12 #26 # in kp/h
+  v_diff_offset_max = 2 #12,5
+  speed_to_reach_max_v_diff_offset = 8 #26,12 # in kp/h
   speed_to_reach_max_v_diff_offset = speed_to_reach_max_v_diff_offset * CV.KPH_TO_MS
   delta_speed = v_lead - v_ego
   if np.all(delta_speed > 0):
@@ -169,7 +169,7 @@ def desired_follow_distance(v_ego, v_lead, t_follow=None, stop_distance=None):
     t_follow = get_T_FOLLOW()
   if stop_distance is None:
     stop_distance = get_STOP_DISTANCE()
-  return max(get_safe_obstacle_distance(v_ego, t_follow, stop_distance) - get_stopped_equivalence_factor(v_lead, v_ego), 0.0)
+  return max(get_safe_obstacle_distance(v_ego, t_follow, stop_distance) - get_stopped_equivalence_factor(v_lead, v_ego), 3.0)
 
 
 def gen_long_model():
