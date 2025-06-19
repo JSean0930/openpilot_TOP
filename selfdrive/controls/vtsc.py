@@ -11,7 +11,7 @@ from openpilot.common.params import Params
 params = Params()
 
 # 彎道控制參數
-TARGET_LAT_A = 2.5  # 最大橫向加速度限制 (m/s^2)
+TARGET_LAT_A = 3.5  # 最大橫向加速度限制 (m/s^2) 2.5
 MIN_TARGET_V = 10.0  # 最低彎道速度限制 (m/s)
 HISTORY_LENGTH = 10  # 曲率歷史長度
 SMOOTHING_ALPHA = 0.3  # 目標速度平滑因子
