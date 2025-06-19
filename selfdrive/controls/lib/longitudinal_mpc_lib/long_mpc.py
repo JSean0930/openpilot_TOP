@@ -406,8 +406,8 @@ class LongitudinalMpc:
 
   @staticmethod
   def extrapolate_lead(x_lead, v_lead, a_lead, a_lead_tau):
-    #a_lead_traj = a_lead * np.exp(-a_lead_tau * (T_IDXS**2)/2.) 11
-    a_lead_traj = a_lead * np.exp(-T_IDXS / a_lead_tau)
+    #a_lead_traj = a_lead * np.exp(-a_lead_tau * (T_IDXS**2)/2.) #靈敏的高斯模型
+    a_lead_traj = a_lead * np.exp(-T_IDXS / a_lead_tau) #穩定的一階衰減模型
     v_lead_traj = np.clip(v_lead + np.cumsum(T_DIFFS * a_lead_traj), 0.0, 1e8)
     x_lead_traj = x_lead + np.cumsum(T_DIFFS * v_lead_traj)
     lead_xv = np.column_stack((x_lead_traj, v_lead_traj))
