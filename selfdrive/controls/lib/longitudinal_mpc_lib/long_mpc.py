@@ -408,7 +408,8 @@ class LongitudinalMpc:
   #def extrapolate_lead(x_lead, v_lead, a_lead, a_lead_tau):
   def extrapolate_lead(x_lead, v_lead, a_lead, a_lead_tau, v_ego):
     # 限制 a_lead_tau 穩定範圍，避免數值爆炸
-    a_lead_tau = np.clip(a_lead_tau, 1e-2, 10.0)
+    #a_lead_tau = np.clip(a_lead_tau, 1e-2, 10.0)
+    a_lead_tau = np.clip(a_lead_tau, 0.1, 4.0)
     #a_lead_traj = a_lead * np.exp(-a_lead_tau * (T_IDXS**2)/2.) #靈敏的高斯模型
     #a_lead_traj = a_lead * np.exp(-T_IDXS / a_lead_tau) #穩定的一階衰減模型
     #=====================
@@ -447,7 +448,8 @@ class LongitudinalMpc:
       v_lead = np.nan_to_num(lead.vLead, nan=0.0)
       a_lead = np.nan_to_num(lead.aLeadK, nan=0.0)
       a_lead_tau = np.nan_to_num(lead.aLeadTau, nan=_LEAD_ACCEL_TAU)
-      a_lead_tau = np.clip(a_lead_tau, 1e-2, 10.0)
+      #a_lead_tau = np.clip(a_lead_tau, 1e-2, 10.0)
+      a_lead_tau = np.clip(a_lead_tau, 0.1, 4.0)  
     else:
       # Fake a fast lead car, so MPC can keep running in the same mode
       x_lead = 50.0
