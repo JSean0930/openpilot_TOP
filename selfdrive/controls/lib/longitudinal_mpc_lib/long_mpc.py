@@ -407,14 +407,33 @@ class LongitudinalMpc:
   @staticmethod
   #def extrapolate_lead(x_lead, v_lead, a_lead, a_lead_tau):
   def extrapolate_lead(x_lead, v_lead, a_lead, a_lead_tau, v_ego):
+    # 限制 a_lead_tau 穩定範圍，避免數值爆炸
+    a_lead_tau = np.clip(a_lead_tau, 1e-2, 10.0)
     #a_lead_traj = a_lead * np.exp(-a_lead_tau * (T_IDXS**2)/2.) #靈敏的高斯模型
     #a_lead_traj = a_lead * np.exp(-T_IDXS / a_lead_tau) #穩定的一階衰減模型
     #=====================
     # 設定切換門檻
-    if v_ego < 10.0:  # 約 36 km/h 以下
-      a_lead_traj = a_lead * np.exp(-a_lead_tau * (T_IDXS**2) / 2.) # 高靈敏度：近似高斯模型
+    #if v_ego < 10.0:  # 約 36 km/h 以下
+      #a_lead_traj = a_lead * np.exp(-a_lead_tau * (T_IDXS**2) / 2.) # 高靈敏度：近似高斯模型
+    #else:
+      #a_lead_traj = a_lead * np.exp(-T_IDXS / a_lead_tau) # 穩定模式：一階指數衰減
+    #================================================================
+    # 停止狀態下，高靈敏預測（如 Stop & Go）
+    if v_ego < 2.78:
+      # 若前車真的明顯在啟動，允許快速起步
+      if v_lead < 2.0 and a_lead > 0.2:
+        sensitivity_gain = 4.0 # 起步靈敏
+      else:
+        sensitivity_gain = 3.0 # 煞車靈敏
+        a_lead_traj = a_lead * np.exp(-sensitivity_gain * a_lead_tau * (T_IDXS**2) / 2.)
+    # 壅塞狀態（低速密集跟車）
+    elif v_ego < 5.56:  # 20 km/h 以下
+      sensitivity_gain = 2.0
+      a_lead_traj = a_lead * np.exp(-sensitivity_gain * a_lead_tau * (T_IDXS**2) / 2.)
+
+    # 一般高速巡航
     else:
-      a_lead_traj = a_lead * np.exp(-T_IDXS / a_lead_tau) # 穩定模式：一階指數衰減
+      a_lead_traj = a_lead * np.exp(-T_IDXS / a_lead_tau)
     #======================要碼掉，同時要將line446 -> 445
     v_lead_traj = np.clip(v_lead + np.cumsum(T_DIFFS * a_lead_traj), 0.0, 1e8)
     x_lead_traj = x_lead + np.cumsum(T_DIFFS * v_lead_traj)
