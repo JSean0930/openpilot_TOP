@@ -67,11 +67,11 @@ def get_danger_zone_cost(v_ego):
   # 線性插值：0 m/s → 100，33.3 m/s (120 km/h) → 300
   #return np.interp(v_ego, [0.0, 27.78], [120.0, 500.0])
   if v_ego < 10.0:
-    return 120.0
+    return 100.0
   elif v_ego < 19.5:
-    return np.interp(v_ego, [10.0, 19.5], [120.0, 200.0])
+    return np.interp(v_ego, [10.0, 19.5], [100.0, 300.0])
   else:
-    return np.interp(v_ego, [19.5, 27.8], [200.0, 500.0])
+    return np.interp(v_ego, [19.5, 27.8], [300.0, 600.0])
 
 #def get_lead_danger_factor(v_ego):
   #return np.interp(v_ego, [0.0, 33.3], [1.0, 1.4])  # 線性插值，隨速度提升危險因子增加
@@ -169,7 +169,7 @@ def desired_follow_distance(v_ego, v_lead, t_follow=None, stop_distance=None):
     t_follow = get_T_FOLLOW()
   if stop_distance is None:
     stop_distance = get_STOP_DISTANCE()
-  return max(get_safe_obstacle_distance(v_ego, t_follow, stop_distance) - get_stopped_equivalence_factor(v_lead, v_ego), 3.0)
+  return max(get_safe_obstacle_distance(v_ego, t_follow, stop_distance) - get_stopped_equivalence_factor(v_lead, v_ego), 4.0)
 
 
 def gen_long_model():
@@ -422,7 +422,7 @@ class LongitudinalMpc:
     # 停止狀態下，高靈敏預測（如 Stop & Go）
     if v_ego < 5.56:
       # 若前車真的明顯在啟動，允許快速起步
-      if v_lead < 2.0 and a_lead > 0.2:
+      if v_lead < 1.0:
         sensitivity_gain = 4.0 # 起步靈敏
       else:
         sensitivity_gain = 3.0 # 煞車靈敏
@@ -519,8 +519,8 @@ class LongitudinalMpc:
       # 混合 e2e 和 cruise，根據速度平滑插值
       v_low, v_high = 5.0, 15.0
       w = np.clip((v_ego - v_low) / (v_high - v_low), 0.0, 0.5)
-      x_mixed = (1 - w) * np.minimum(x_e2e, cruise_target) + w * np.maximum(x_e2e, cruise_target)
-      #x_mixed = w * np.minimum(x_e2e, cruise_target) + (1 - w) * np.maximum(x_e2e, cruise_target)
+      #x_mixed = (1 - w) * np.minimum(x_e2e, cruise_target) + w * np.maximum(x_e2e, cruise_target)
+      x_mixed = w * np.minimum(x_e2e, cruise_target) + (1 - w) * np.maximum(x_e2e, cruise_target)
       x[:] = x_mixed  # 修正此行
 
       self.yref[:,1] = x
