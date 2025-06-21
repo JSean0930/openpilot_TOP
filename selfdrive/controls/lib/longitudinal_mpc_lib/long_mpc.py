@@ -533,10 +533,21 @@ class LongitudinalMpc:
 
       e2e_dist = x_e2e[1]
       cruise_dist = cruise_target[1]
-      if self.source == 'e2e':
-        self.source = 'e2e' if e2e_dist > cruise_dist * 0.9 else 'cruise'
+      # blended 模式中：固定高速使用 cruise 為主，避免 e2e 參與
+      if v_ego > 19.45:  # 約 70 km/h 以上
+        self.source = 'cruise'
       else:
-        self.source = 'e2e' if e2e_dist > cruise_dist * 1.1 else 'cruise'
+        # 低速時保留現有動態切換
+        if self.source == 'e2e':
+          self.source = 'e2e' if e2e_dist > cruise_dist * 0.9 else 'cruise'
+        else:
+          self.source = 'e2e' if e2e_dist > cruise_dist * 1.1 else 'cruise'
+#================================================
+      #if self.source == 'e2e':
+        #self.source = 'e2e' if e2e_dist > cruise_dist * 0.9 else 'cruise'
+      #else:
+        #self.source = 'e2e' if e2e_dist > cruise_dist * 1.1 else 'cruise'
+#===============================================
     else:
       raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner update')
 
