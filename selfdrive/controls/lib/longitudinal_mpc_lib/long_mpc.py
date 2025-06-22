@@ -546,6 +546,11 @@ class LongitudinalMpc:
       if v_ego < 1.5:
         self.source = 'lead0'
 #================================================
+      #if v_ego < 1.5:
+        #min_lead_obstacle = np.min([lead_0_obstacle[0], lead_1_obstacle[0]])
+        #if x_mixed[0] + get_STOP_DISTANCE(personality) > min_lead_obstacle:
+          #self.source = 'lead0'
+#================================================
       #if self.source == 'e2e':
         #self.source = 'e2e' if e2e_dist > cruise_dist * 0.9 else 'cruise'
       #else:
