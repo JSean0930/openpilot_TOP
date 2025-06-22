@@ -135,11 +135,11 @@ def get_adaptive_T_FOLLOW(v_ego, a_lead, personality=log.LongitudinalPersonality
 
 def get_STOP_DISTANCE(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
-    return 10.0
+    return 6.0
   elif personality==log.LongitudinalPersonality.standard:
-    return 11.0
+    return 6.0
   elif personality==log.LongitudinalPersonality.aggressive:
-    return 12.0
+    return 6.0
   else:
     raise NotImplementedError("Longitudinal personality not supported")
 
@@ -542,6 +542,9 @@ class LongitudinalMpc:
           self.source = 'e2e' if e2e_dist > cruise_dist * 0.9 else 'cruise'
         else:
           self.source = 'e2e' if e2e_dist > cruise_dist * 1.1 else 'cruise'
+      # 🚧 強制停止狀態改為使用 lead0（避免 e2e 預測導致距離過短）
+      if v_ego < 1.5:
+        self.source = 'lead0'
 #================================================
       #if self.source == 'e2e':
         #self.source = 'e2e' if e2e_dist > cruise_dist * 0.9 else 'cruise'
