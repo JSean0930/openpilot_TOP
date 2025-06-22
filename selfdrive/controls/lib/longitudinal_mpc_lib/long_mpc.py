@@ -531,6 +531,10 @@ class LongitudinalMpc:
       w = np.clip((v_ego - v_low) / (v_high - v_low), 0.0, 0.5)
       #x_mixed = (1 - w) * np.minimum(x_e2e, cruise_target) + w * np.maximum(x_e2e, cruise_target)
       x_mixed = w * np.minimum(x_e2e, cruise_target) + (1 - w) * np.maximum(x_e2e, cruise_target)
+      # ✅ 停止中：加上安全距離補償，避免靠太近
+      if v_ego < 1.5:
+        x_mixed[0] += get_STOP_DISTANCE(personality)
+            
       x[:] = x_mixed  # 修正此行
 
       self.yref[:,1] = x
@@ -552,9 +556,6 @@ class LongitudinalMpc:
           self.source = 'e2e' if e2e_dist > cruise_dist * 0.9 else 'cruise'
         else:
           self.source = 'e2e' if e2e_dist > cruise_dist * 1.1 else 'cruise'
-      # 🚧 強制停止狀態改為使用 lead0（避免 e2e 預測導致距離過短）
-      if v_ego < 1.5:
-        self.source = 'lead0'
 #================================================
       #if v_ego < 1.5:
         #min_lead_obstacle = np.min([lead_0_obstacle[0], lead_1_obstacle[0]])
