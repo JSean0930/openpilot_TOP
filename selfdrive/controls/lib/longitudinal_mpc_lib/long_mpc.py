@@ -401,7 +401,15 @@ class LongitudinalMpc:
   def set_cur_state(self, v, a):
     v_prev = self.x0[1]
     self.x0[1] = v
-    self.x0[2] = a
+    #self.x0[2] = a
+    #==================================
+    # 若有上一次解，用 a_solution[0] 作為預測初值，提升平順度
+    if hasattr(self, "a_solution") and len(self.a_solution) > 0:
+      self.x0[2] = self.a_solution[0]
+    else:
+      self.x0[2] = a  # fallback 為感測到的實際加速度
+
+    #===================================
     if abs(v_prev - v) > 2.:  # probably only helps if v < v_prev
       for i in range(N+1):
         self.solver.set(i, 'x', self.x0)
