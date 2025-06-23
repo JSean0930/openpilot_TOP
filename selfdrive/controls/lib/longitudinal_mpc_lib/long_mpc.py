@@ -69,9 +69,9 @@ def get_danger_zone_cost(v_ego):
   if v_ego < 10.0:
     return 130.0
   elif v_ego < 19.5:
-    return np.interp(v_ego, [10.0, 19.5], [130.0, 300.0])
+    return 200.0#np.interp(v_ego, [10.0, 19.5], [130.0, 300.0])
   else:
-    return np.interp(v_ego, [19.5, 27.8], [300.0, 600.0])
+    return 300.0#np.interp(v_ego, [19.5, 27.8], [300.0, 600.0])
 
 #def get_lead_danger_factor(v_ego):
   #return np.interp(v_ego, [0.0, 33.3], [1.0, 1.4])  # 線性插值，隨速度提升危險因子增加
