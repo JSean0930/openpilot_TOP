@@ -519,7 +519,7 @@ class LongitudinalMpc:
       self.x_e2e_smooth = 0.8 * self.x_e2e_smooth + 0.2 * x_e2e if hasattr(self, "x_e2e_smooth") else x_e2e.copy()
       x_e2e = self.x_e2e_smooth
       # 混合 e2e 和 cruise，根據速度平滑插值
-      v_low, v_high = 0.0, 33.4
+      v_low, v_high = 0.0, 32.0
       w = np.clip((v_ego - v_low) / (v_high - v_low), 0.0, 0.5)
       #x_mixed = (1 - w) * np.minimum(x_e2e, cruise_target) + w * np.maximum(x_e2e, cruise_target)
       x_mixed = w * np.minimum(x_e2e, cruise_target) + (1 - w) * np.maximum(x_e2e, cruise_target)
