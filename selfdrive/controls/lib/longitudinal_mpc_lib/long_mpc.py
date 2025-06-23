@@ -522,10 +522,10 @@ class LongitudinalMpc:
       v_low, v_high = 5.0, 27.0
       w = np.clip((v_ego - v_low) / (v_high - v_low), 0.0, 0.5)
       #x_mixed = (1 - w) * np.minimum(x_e2e, cruise_target) + w * np.maximum(x_e2e, cruise_target)
-      x_mixed = np.maximum(w * np.minimum(x_e2e, cruise_target) + (1 - w) * np.maximum(x_e2e, cruise_target), 5.0)
-      #x_mixed = w * np.minimum(x_e2e, cruise_target) + (1 - w) * np.maximum(x_e2e, cruise_target)
+      #x_mixed = np.maximum(w * np.minimum(x_e2e, cruise_target) + (1 - w) * np.maximum(x_e2e, cruise_target), 5.0)
+      x_mixed = w * np.minimum(x_e2e, cruise_target) + (1 - w) * np.maximum(x_e2e, cruise_target)
       # ✅ 停止中：加上安全距離補償，避免靠太近
-      #x_mixed[0] = max(x_mixed[0], 5.0)
+      x_mixed[0] = max(x_mixed[0], 10.0)
       
       x[:] = x_mixed  # 修正此行
 
