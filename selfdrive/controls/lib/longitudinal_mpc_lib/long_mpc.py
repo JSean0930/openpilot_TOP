@@ -522,11 +522,11 @@ class LongitudinalMpc:
       v_low, v_high = 5.0, 27.0
       w = np.clip((v_ego - v_low) / (v_high - v_low), 0.0, 0.5)
       #x_mixed = (1 - w) * np.minimum(x_e2e, cruise_target) + w * np.maximum(x_e2e, cruise_target)
+      #x_mixed = np.maximum(w * np.minimum(x_e2e, cruise_target) + (1 - w) * np.maximum(x_e2e, cruise_target), 5.0)
       x_mixed = w * np.minimum(x_e2e, cruise_target) + (1 - w) * np.maximum(x_e2e, cruise_target)
       # ✅ 停止中：加上安全距離補償，避免靠太近
-      if v_ego < 10.0:
-        x_mixed[0] += get_safe_obstacle_distance(v_ego, t_follow, stop_distance) + 2.0
-            
+      x_mixed[0] = max(x_mixed[0], 5.0)
+      
       x[:] = x_mixed  # 修正此行
 
       self.yref[:,1] = x
@@ -540,24 +540,24 @@ class LongitudinalMpc:
       e2e_dist = x_e2e[1]
       cruise_dist = cruise_target[1]
       # blended 模式中：固定高速使用 cruise 為主，避免 e2e 參與
-      #if v_ego > 19.45:  # 約 70 km/h 以上
-        #self.source = 'cruise'
-      #else:
+      if v_ego > 19.45:  # 約 70 km/h 以上
+        self.source = 'cruise'
+      else:
         # 低速時保留現有動態切換
-        #if self.source == 'e2e':
-          #self.source = 'e2e' if e2e_dist > cruise_dist * 0.9 else 'cruise'
-        #else:
-          #self.source = 'e2e' if e2e_dist > cruise_dist * 1.1 else 'cruise'
+        if self.source == 'e2e':
+          self.source = 'e2e' if e2e_dist > cruise_dist * 0.9 else 'cruise'
+        else:
+          self.source = 'e2e' if e2e_dist > cruise_dist * 1.1 else 'cruise'
 #================================================
       #if v_ego < 1.5:
         #min_lead_obstacle = np.min([lead_0_obstacle[0], lead_1_obstacle[0]])
         #if x_mixed[0] + get_STOP_DISTANCE(personality) > min_lead_obstacle:
           #self.source = 'lead0'
 #================================================
-      if self.source == 'e2e':
-        self.source = 'e2e' if e2e_dist > cruise_dist * 0.9 else 'cruise'
-      else:
-        self.source = 'e2e' if e2e_dist > cruise_dist * 1.1 else 'cruise'
+      #if self.source == 'e2e':
+        #self.source = 'e2e' if e2e_dist > cruise_dist * 0.9 else 'cruise'
+      #else:
+        #self.source = 'e2e' if e2e_dist > cruise_dist * 1.1 else 'cruise'
 #===============================================
     else:
       raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner update')
