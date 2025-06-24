@@ -126,7 +126,7 @@ def get_adaptive_T_FOLLOW(v_ego, a_lead, personality=log.LongitudinalPersonality
   base_t_follow = get_T_FOLLOW(personality)
 
   # 當前車有明顯減速時，額外增加安全距離
-  if a_lead < -1.0:
+  if a_lead < -0.75:
     # 增加最多0.3秒追車時距，視前車減速度線性調整
     extra_t_follow = np.clip(-0.3 * a_lead, 0.0, 0.3)
     base_t_follow += extra_t_follow
@@ -496,8 +496,7 @@ class LongitudinalMpc:
         self.mode = 'acc'
 
     if self.mode == 'acc':
-      danger_factor = get_lead_danger_factor(v_ego)
-      self.params[:,5] = danger_factor
+      self.params[:,5] = 0.75
       v_lower = v_ego + (T_IDXS * CRUISE_MIN_ACCEL * 0.95)
       v_upper = v_ego + (T_IDXS * CRUISE_MAX_ACCEL * 0.9)
       v_cruise_clipped = np.clip(v_cruise * np.ones(N+1), v_lower, v_upper)
@@ -522,7 +521,7 @@ class LongitudinalMpc:
       self.x_e2e_smooth = 0.8 * self.x_e2e_smooth + 0.2 * x_e2e if hasattr(self, "x_e2e_smooth") else x_e2e.copy()
       x_e2e = self.x_e2e_smooth
       # 混合 e2e 和 cruise，根據速度平滑插值
-      v_low, v_high = 5.0, 27.0
+      v_low, v_high = 5.0, 14.0
       w = np.clip((v_ego - v_low) / (v_high - v_low), 0.2, 0.6)
       #x_mixed = (1 - w) * np.minimum(x_e2e, cruise_target) + w * np.maximum(x_e2e, cruise_target)
       #x_mixed = np.maximum(w * np.minimum(x_e2e, cruise_target) + (1 - w) * np.maximum(x_e2e, cruise_target), 5.0)
