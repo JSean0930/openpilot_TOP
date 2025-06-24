@@ -389,10 +389,10 @@ class LongitudinalMpc:
       cost_weights = [X_EGO_OBSTACLE_COST, X_EGO_COST, V_EGO_COST, A_EGO_COST, jerk_factor * a_change_cost * a_change_v_ego, jerk_factor * J_EGO_COST * j_ego_v_ego]
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, danger_cost]
     elif self.mode == 'blended':
-      a_change_cost = 150.0 if prev_accel_constraint else 0
+      a_change_cost = 100.0 if prev_accel_constraint else 0
       #cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 1.0]
       if v_ego < 10.0:
-        j_ego_v_ego *= 2.0  # 強化低速舒適性 1.5
+        j_ego_v_ego *= 2.5  # 強化低速舒適性 1.5
       cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 2.5 * j_ego_v_ego]
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, danger_cost]
     else:
@@ -461,8 +461,13 @@ class LongitudinalMpc:
       a_lead_tau = _LEAD_ACCEL_TAU
 
     # 限制最小可追蹤距離，避免立即碰撞導致 MPC 發散
-    min_x_lead = ((v_ego + v_lead)/2) * (v_ego - v_lead) / max(-ACCEL_MIN * 2, 1e-3)
-    x_lead = np.clip(x_lead, min_x_lead, 1e8)
+    #min_x_lead = ((v_ego + v_lead)/2) * (v_ego - v_lead) / max(-ACCEL_MIN * 2, 1e-3)
+    #x_lead = np.clip(x_lead, min_x_lead, 1e8)
+    
+    min_brake = -ACCEL_MIN * 2  # 正数
+    min_x = max(((v_ego + v_lead) / 2) * (v_ego - v_lead) / max(min_brake, 1e-3), 0.0)
+    x_lead = np.clip(x_lead, min_x, np.inf)
+    
     v_lead = np.clip(v_lead, 0.0, 1e8)
     a_lead = np.clip(a_lead, -10., 5.)
 
@@ -492,9 +497,15 @@ class LongitudinalMpc:
 
     self.params[:,0] = ACCEL_MIN
     self.params[:,1] = ACCEL_MAX
-
+    
+    # 如果目前是 ACC，且速度降回 70 km/h 以下，就切回 blended
+    if self.mode == 'acc' and v_ego < 19.44:  # 19.44 m/s ≈ 70 km/h
+        self.mode = 'blended'
+        self.set_weights(prev_accel_constraint=True, personality=personality, v_lead0=a_lead0, v_lead1=a_lead1)
+    # 再接原本的混合→ACC切換
     if self.mode == 'blended' and v_ego > 19.44:  # 19.44 m/s ≈ 70 km/h
         self.mode = 'acc'
+        self.set_weights(prev_accel_constraint=True, personality=personality, v_lead0=a_lead0, v_lead1=a_lead1)
 
     if self.mode == 'acc':
       self.params[:,5] = 0.75
