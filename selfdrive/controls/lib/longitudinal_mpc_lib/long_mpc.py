@@ -510,11 +510,11 @@ class LongitudinalMpc:
       x_obstacles = np.column_stack([lead_0_obstacle, lead_1_obstacle])
       
       # cruise 目標距離（略為積極）
-      cruise_target = T_IDXS * np.clip(v_cruise, v_ego - 4.0, 1e3) + x[0] # *1.0是放大係數（可改為 >1.0 讓巡航更激進，或 <1.0 更保守），下限 v_ego - 2.0 決定了當車速高於目標時是否允許輕微減速。
+      cruise_target = T_IDXS * np.clip(v_cruise, v_ego - 4.0, 1e3) + x[0]
       
       # e2e 預測距離
       xforward = ((v[1:] + v[:-1]) / 2) * (T_IDXS[1:] - T_IDXS[:-1])
-      x_e2e = np.cumsum(np.insert(xforward, 0, x[0])) # 將 e2e 預測距離額外乘以 0.95，會讓 e2e 軌跡對加速目標略顯保守。數值越接近 1，e2e 的影響越大；越小，則更偏向 cruise，進而影響加速決策和引擎轉速。
+      x_e2e = np.cumsum(np.insert(xforward, 0, x[0]))
       #平滑濾波
       self.x_e2e_smooth = 0.8 * self.x_e2e_smooth + 0.2 * x_e2e if hasattr(self, "x_e2e_smooth") else x_e2e.copy()
       x_e2e = self.x_e2e_smooth
