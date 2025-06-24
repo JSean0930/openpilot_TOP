@@ -259,10 +259,14 @@ def gen_long_ocp():
   # Constraints on speed, acceleration and desired distance to
   # the obstacle, which is treated as a slack constraint so it
   # behaves like an asymmetrical cost.
+
+desired_dist = desired_follow_distance(v_ego, x_obstacle - x_ego,
+                                       lead_t_follow, stop_distance)
+
   constraints = vertcat(v_ego,
                         (a_ego - a_min),
-                        (a_max - a_ego),
-                        ((x_obstacle - x_ego) - lead_danger_factor * (desired_dist_comfort)) / (v_ego + 10.))
+                        (a_max - a_ego), (x_obstacle - x_ego) - desired_dist) # x_obstacle - x_ego >= desired_dist
+                        #((x_obstacle - x_ego) - lead_danger_factor * (desired_dist_comfort)) / (v_ego + 10.))
   ocp.model.con_h_expr = constraints
 
   x0 = np.zeros(X_DIM)
@@ -393,7 +397,8 @@ class LongitudinalMpc:
       #cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 1.0]
       if v_ego < 10.0:
         j_ego_v_ego *= 2.5  # 強化低速舒適性 1.5
-      cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 2.5 * j_ego_v_ego]
+      #cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 2.5 * j_ego_v_ego]
+      cost_weights = [X_EGO_OBSTACLE_COST, 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 2.5 * j_ego_v_ego]
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, danger_cost]
     else:
       raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner cost set')
@@ -541,8 +546,8 @@ class LongitudinalMpc:
       # ✅ 停止中：加上安全距離補償，避免靠太近
       if v_ego < 5.0:
         safe_dist = get_safe_obstacle_distance(v_ego, t_follow, stop_distance)
-        safe_dist += 5.0
-        x_mixed[0] = min(x_mixed[0], lead_0_obstacle[0] - safe_dist)
+        safe_dist += 2.0
+        x_mixed[0] = max(x_mixed[0], lead_0_obstacle[0] - safe_dist)
       
       x[:] = x_mixed  # 修正此行
 
