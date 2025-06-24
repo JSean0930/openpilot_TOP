@@ -542,10 +542,10 @@ class LongitudinalMpc:
       #x_mixed = np.maximum(w * np.minimum(x_e2e, cruise_target) + (1 - w) * np.maximum(x_e2e, cruise_target), 5.0)
       x_mixed = w * np.minimum(x_e2e, cruise_target) + (1 - w) * np.maximum(x_e2e, cruise_target)
       # ✅ 停止中：加上安全距離補償，避免靠太近
-      if v_ego < 5.0:
-        safe_dist = get_safe_obstacle_distance(v_ego, t_follow, stop_distance)
-        safe_dist += 2.0
-        x_mixed[0] = max(x_mixed[0], lead_0_obstacle[0] - safe_dist)
+      #if v_ego < 5.0:
+        #safe_dist = get_safe_obstacle_distance(v_ego, t_follow, stop_distance)
+        #safe_dist += 2.0
+        #x_mixed[0] = max(x_mixed[0], lead_0_obstacle[0] - safe_dist)
       
       x[:] = x_mixed  # 修正此行
 
