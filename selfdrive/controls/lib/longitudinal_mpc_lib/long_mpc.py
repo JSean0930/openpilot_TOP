@@ -539,6 +539,11 @@ class LongitudinalMpc:
         self.solver.set(i, "yref", self.yref[i])
       self.solver.set(N, "yref", self.yref[N][:COST_E_DIM])
 
+      self.params[:,2] = np.min(x_obstacles, axis=1)
+      self.params[:,3] = np.copy(self.prev_a)
+      self.params[:,4] = t_follow
+      self.params[:,6] = stop_distance
+
       e2e_dist = x_e2e[1]
       cruise_dist = cruise_target[1]
       # blended 模式中：固定高速使用 cruise 為主，避免 e2e 參與
