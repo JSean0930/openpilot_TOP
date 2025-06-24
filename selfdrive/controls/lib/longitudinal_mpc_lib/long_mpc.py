@@ -67,7 +67,7 @@ def get_danger_zone_cost(v_ego):
   # 線性插值：0 m/s → 100，33.3 m/s (120 km/h) → 300
   #return np.interp(v_ego, [0.0, 27.78], [120.0, 500.0])
   if v_ego < 10.0:
-    return 130.0
+    return 180.0
   elif v_ego < 19.5:
     return 200.0#np.interp(v_ego, [10.0, 19.5], [130.0, 300.0])
   else:
@@ -384,6 +384,7 @@ class LongitudinalMpc:
     danger_cost = get_danger_zone_cost(v_ego)
     
     if self.mode == 'acc':
+      danger_cost = 100.
       a_change_cost = A_CHANGE_COST if prev_accel_constraint else 0
       cost_weights = [X_EGO_OBSTACLE_COST, X_EGO_COST, V_EGO_COST, A_EGO_COST, jerk_factor * a_change_cost * a_change_v_ego, jerk_factor * J_EGO_COST * j_ego_v_ego]
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, danger_cost]
