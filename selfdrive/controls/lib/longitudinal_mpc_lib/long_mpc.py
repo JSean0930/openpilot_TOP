@@ -502,7 +502,7 @@ class LongitudinalMpc:
     self.params[:,1] = ACCEL_MAX
     #===================================================================
     # 閾值（m/s）
-    low_thr  = 15.0 / 3.6   # 10 km/hr
+    low_thr  = 10.0 / 3.6   # 10 km/hr
     high_thr = 70.0 / 3.6   # 70 km/hr
     #===================================================================
     #if self.mode == 'blended' and (v_ego < low_thr or v_ego > high_thr):
