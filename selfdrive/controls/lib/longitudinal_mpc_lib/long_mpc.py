@@ -394,7 +394,7 @@ class LongitudinalMpc:
       a_change_cost = 100.0 if prev_accel_constraint else 0
       #cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 1.0]
       if v_ego < 10.0:
-        j_ego_v_ego *= 2.5  # 強化低速舒適性 1.5
+        j_ego_v_ego *= 3.5  # 強化低速舒適性 1.5
       #cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 2.5 * j_ego_v_ego]
       cost_weights = [X_EGO_OBSTACLE_COST, 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 2.5 * j_ego_v_ego]
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, danger_cost]
