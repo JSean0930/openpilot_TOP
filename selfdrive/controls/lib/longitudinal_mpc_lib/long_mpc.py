@@ -316,6 +316,8 @@ class LongitudinalMpc:
     self.reset()
     self.source = SOURCES[2]
 
+    self.prev_v_ego = 0.0 # 新增：用來記錄上一次的速度
+
   def reset(self):
     # self.solver = AcadosOcpSolverCython(MODEL_NAME, ACADOS_SOLVER_TYPE, N)
     self.solver.reset()
@@ -499,24 +501,25 @@ class LongitudinalMpc:
     self.params[:,0] = ACCEL_MIN
     self.params[:,1] = ACCEL_MAX
     #===================================================================
-    # 如果目前是 ACC，且速度降回 70 km/h 以下，就切回 blended
-    #if self.mode == 'acc' and v_ego < 19.44:  # 19.44 m/s ≈ 70 km/h
-        #self.mode = 'blended'
-        #self.set_weights(prev_accel_constraint=True, personality=personality, v_lead0=a_lead0, v_lead1=a_lead1)
-    # 再接原本的混合→ACC切換
-    #if self.mode == 'blended' and v_ego > 19.44:  # 19.44 m/s ≈ 70 km/h
-        #self.mode = 'acc'
-        #self.set_weights(prev_accel_constraint=True, personality=personality, v_lead0=a_lead0, v_lead1=a_lead1)
-    #===================================================================
     # 閾值（m/s）
     low_thr  = 10.0 / 3.6   # 10 km/hr
     high_thr = 70.0 / 3.6   # 70 km/hr
+    #===================================================================
     if self.mode == 'blended' and (v_ego < low_thr or v_ego > high_thr):
         self.mode = 'acc'
         self.set_weights(prev_accel_constraint=True, personality=personality, v_lead0=a_lead0, v_lead1=a_lead1)
     elif self.mode == 'acc' and (low_thr <= v_ego <= high_thr):
         self.mode = 'blended'
         self.set_weights(prev_accel_constraint=True, personality=personality, v_lead0=a_lead0, v_lead1=a_lead1)
+    #===================================================================
+    # 讀當前速度
+    v_ego = self.x0[1]
+    # 上一週期速度
+    v_prev = self.prev_v_ego
+    dv = v_ego - v_prev
+    
+
+    #===================================================================
 
     if self.mode == 'acc':
       self.params[:,5] = 0.75
