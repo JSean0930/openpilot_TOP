@@ -502,23 +502,32 @@ class LongitudinalMpc:
     self.params[:,1] = ACCEL_MAX
     #===================================================================
     # 閾值（m/s）
-    low_thr  = 10.0 / 3.6   # 10 km/hr
+    low_thr  = 15.0 / 3.6   # 10 km/hr
     high_thr = 70.0 / 3.6   # 70 km/hr
     #===================================================================
-    if self.mode == 'blended' and (v_ego < low_thr or v_ego > high_thr):
-        self.mode = 'acc'
-        self.set_weights(prev_accel_constraint=True, personality=personality, v_lead0=a_lead0, v_lead1=a_lead1)
-    elif self.mode == 'acc' and (low_thr <= v_ego <= high_thr):
-        self.mode = 'blended'
-        self.set_weights(prev_accel_constraint=True, personality=personality, v_lead0=a_lead0, v_lead1=a_lead1)
+    #if self.mode == 'blended' and (v_ego < low_thr or v_ego > high_thr):
+        #self.mode = 'acc'
+        #self.set_weights(prev_accel_constraint=True, personality=personality, v_lead0=a_lead0, v_lead1=a_lead1)
+    #elif self.mode == 'acc' and (low_thr <= v_ego <= high_thr):
+        #self.mode = 'blended'
+        #self.set_weights(prev_accel_constraint=True, personality=personality, v_lead0=a_lead0, v_lead1=a_lead1)
     #===================================================================
     # 讀當前速度
     v_ego = self.x0[1]
     # 上一週期速度
     v_prev = self.prev_v_ego
     dv = v_ego - v_prev
-    
+    stopped_thr = 0.05          # 視為「靜止」的速度阈值
 
+    if self.mode == 'blended' and ((dv < 0 and v_ego <= low_thr) or v_ego > high_thr):
+        self.mode = 'acc'
+        self.set_weights(prev_accel_constraint=True, personality=personality, v_lead0=a_lead0, v_lead1=a_lead1)
+    elif self.mode == 'acc' and self.prev_v_ego <= stopped_thr and dv > 0:
+        self.mode = 'blended'
+        self.set_weights(prev_accel_constraint=True, personality=personality, v_lead0=a_lead0, v_lead1=a_lead1)
+      
+    # 更新 prev_v_ego，供下一次使用
+    self.prev_v_ego = v_ego
     #===================================================================
 
     if self.mode == 'acc':
