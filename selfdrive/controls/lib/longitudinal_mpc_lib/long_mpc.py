@@ -513,8 +513,10 @@ class LongitudinalMpc:
     high_thr = 70.0 / 3.6   # 70 km/hr
     if self.mode == 'blended' and (v_ego < low_thr or v_ego > high_thr):
         self.mode = 'acc'
+        self.set_weights(prev_accel_constraint=True, personality=personality, v_lead0=a_lead0, v_lead1=a_lead1)
     elif self.mode == 'acc' and (low_thr <= v_ego <= high_thr):
         self.mode = 'blended'
+        self.set_weights(prev_accel_constraint=True, personality=personality, v_lead0=a_lead0, v_lead1=a_lead1)
 
     if self.mode == 'acc':
       self.params[:,5] = 0.75
