@@ -517,7 +517,7 @@ class LongitudinalMpc:
     # 上一週期速度
     v_prev = self.prev_v_ego
     dv = v_ego - v_prev
-    stopped_thr = 0.05          # 視為「靜止」的速度阈值
+    stopped_thr = 0.15          # 視為「靜止」的速度阈值
 
     if self.mode == 'blended' and ((dv < 0 and v_ego <= low_thr) or v_ego > high_thr):
         self.mode = 'acc'
