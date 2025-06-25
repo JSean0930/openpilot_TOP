@@ -259,11 +259,9 @@ def gen_long_ocp():
   # Constraints on speed, acceleration and desired distance to
   # the obstacle, which is treated as a slack constraint so it
   # behaves like an asymmetrical cost.
-
-  desired_dist = desired_follow_distance(v_ego, x_obstacle - x_ego, lead_t_follow, stop_distance)
   constraints = vertcat(v_ego,
                         (a_ego - a_min),
-                        (a_max - a_ego), (x_obstacle - x_ego) - desired_dist) # x_obstacle - x_ego >= desired_dist
+                        (a_max - a_ego), (x_obstacle - x_ego) - desired_dist_comfort) # x_obstacle - x_ego >= desired_dist
                         #((x_obstacle - x_ego) - lead_danger_factor * (desired_dist_comfort)) / (v_ego + 10.))
   ocp.model.con_h_expr = constraints
 
