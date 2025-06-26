@@ -481,8 +481,8 @@ class LongitudinalMpc:
     self.params[:,1] = ACCEL_MAX
     #===================================================================
     # 閾值（m/s）
-    low_thr  = 10.0 / 3.6   # 10 km/hr
-    high_thr = 70.0 / 3.6   # 70 km/hr
+    low_thr  = 10.0 / 3.6   # km/hr to m/s
+    high_thr = 60.0 / 3.6   # km/hr to m/s
     #===================================================================
     # 讀當前速度
     v_ego = self.x0[1]
@@ -528,7 +528,7 @@ class LongitudinalMpc:
       self.x_e2e_smooth = 0.8 * self.x_e2e_smooth + 0.2 * x_e2e if hasattr(self, "x_e2e_smooth") else x_e2e.copy()
       x_e2e = self.x_e2e_smooth
       # 混合 e2e 和 cruise，根據速度平滑插值
-      v_low, v_high = 0.15, 19.0
+      v_low, v_high = 0.15, high_thr
       w = np.clip((v_ego - v_low) / (v_high - v_low), 0.0, 0.5)
       #x_mixed = (1 - w) * np.minimum(x_e2e, cruise_target) + w * np.maximum(x_e2e, cruise_target)
       #x_mixed = np.maximum(w * np.minimum(x_e2e, cruise_target) + (1 - w) * np.maximum(x_e2e, cruise_target), 5.0)
