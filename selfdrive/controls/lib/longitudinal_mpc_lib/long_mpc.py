@@ -67,9 +67,9 @@ def get_danger_zone_cost(v_ego):
   # 線性插值：0 m/s → 100，33.3 m/s (120 km/h) → 300
   #return np.interp(v_ego, [0.0, 27.78], [120.0, 500.0])
   if v_ego < 10.0:
-    return 250.0
+    return 200.0
   elif v_ego < 19.5:
-    return 300.0#np.interp(v_ego, [10.0, 19.5], [130.0, 300.0])
+    return 250.0#np.interp(v_ego, [10.0, 19.5], [130.0, 300.0])
   else:
     return 200.0#np.interp(v_ego, [19.5, 27.8], [300.0, 600.0])
 
@@ -126,7 +126,7 @@ def get_adaptive_T_FOLLOW(v_ego, a_lead, personality=log.LongitudinalPersonality
   base_t_follow = get_T_FOLLOW(personality)
 
   # 當前車有明顯減速時，額外增加安全距離
-  if a_lead < -0.75:
+  if a_lead < -1.5:
     # 增加最多0.3秒追車時距，視前車減速度線性調整
     extra_t_follow = np.clip(-0.3 * a_lead, 0.0, 0.3)
     base_t_follow += extra_t_follow
@@ -367,16 +367,7 @@ class LongitudinalMpc:
   def set_weights(self, prev_accel_constraint=True, personality=log.LongitudinalPersonality.standard, v_lead0=0, v_lead1=0):
     jerk_factor = get_jerk_factor(personality)
     v_ego = self.x0[1]
-    #========================
-    #v_ego_bps = [0, 10]
-    # KRKeegan adjustments to improve sluggish acceleration
-    # do not apply to deceleration
-    #j_ego_v_ego = 1
-    #a_change_v_ego = 1
-    #if (v_lead0 - v_ego >= 0) and (v_lead1 - v_ego >= 0):
-      #j_ego_v_ego = np.interp(v_ego, v_ego_bps, [.10, 1.])
-      #a_change_v_ego = np.interp(v_ego, v_ego_bps, [.10, 1.])
-    #========================
+    
     v_lead = v_lead0 if v_lead0 < v_lead1 else v_lead1
     relative_dist = np.clip(v_lead - v_ego, -5.0, 5.0)
 
@@ -387,14 +378,15 @@ class LongitudinalMpc:
     
     if self.mode == 'acc':
       danger_cost = 100.
+      jerk_comf = 3.0
       a_change_cost = A_CHANGE_COST if prev_accel_constraint else 0
-      cost_weights = [X_EGO_OBSTACLE_COST, X_EGO_COST, V_EGO_COST, A_EGO_COST, jerk_factor * a_change_cost * a_change_v_ego, jerk_factor * J_EGO_COST * j_ego_v_ego]
+      cost_weights = [X_EGO_OBSTACLE_COST, X_EGO_COST, V_EGO_COST, A_EGO_COST, jerk_factor * a_change_cost * a_change_v_ego, jerk_comf * jerk_factor * J_EGO_COST * j_ego_v_ego]
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, danger_cost]
     elif self.mode == 'blended':
       a_change_cost = 50.0 if prev_accel_constraint else 0
       #cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 1.0]
       if v_ego < 10.0:
-        j_ego_v_ego *= 10.0  # 強化低速舒適性 1.5/2.5
+        j_ego_v_ego *= 15.0  # 強化低速舒適性 10
       #cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 2.5 * j_ego_v_ego]
       cost_weights = [X_EGO_OBSTACLE_COST, 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 2.0 * j_ego_v_ego]
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, danger_cost]
@@ -556,7 +548,7 @@ class LongitudinalMpc:
       self.x_e2e_smooth = 0.8 * self.x_e2e_smooth + 0.2 * x_e2e if hasattr(self, "x_e2e_smooth") else x_e2e.copy()
       x_e2e = self.x_e2e_smooth
       # 混合 e2e 和 cruise，根據速度平滑插值
-      v_low, v_high = 5.0, 14.0
+      v_low, v_high = 0.15, 19.0
       w = np.clip((v_ego - v_low) / (v_high - v_low), 0.0, 0.5)
       #x_mixed = (1 - w) * np.minimum(x_e2e, cruise_target) + w * np.maximum(x_e2e, cruise_target)
       #x_mixed = np.maximum(w * np.minimum(x_e2e, cruise_target) + (1 - w) * np.maximum(x_e2e, cruise_target), 5.0)
