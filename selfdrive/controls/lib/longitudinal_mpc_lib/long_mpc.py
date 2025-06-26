@@ -126,7 +126,7 @@ def get_adaptive_T_FOLLOW(v_ego, a_lead, personality=log.LongitudinalPersonality
   base_t_follow = get_T_FOLLOW(personality)
 
   # 當前車有明顯減速時，額外增加安全距離
-  if a_lead < -1.5:
+  if a_lead < -2.0:
     # 增加最多0.3秒追車時距，視前車減速度線性調整
     extra_t_follow = np.clip(-0.3 * a_lead, 0.0, 0.3)
     base_t_follow += extra_t_follow
@@ -153,7 +153,6 @@ def get_stopped_equivalence_factor(v_lead, v_ego):
   speed_to_reach_max_v_diff_offset = speed_to_reach_max_v_diff_offset * CV.KPH_TO_MS
   delta_speed = v_lead - v_ego
   if np.all(delta_speed > 0):
-    #v_diff_offset = delta_speed ** 6
     v_diff_offset = (np.clip(delta_speed, 0, 5)) ** 2.5
     v_diff_offset = np.clip(v_diff_offset, 0, v_diff_offset_max)
     v_diff_offset = np.maximum(v_diff_offset * ((speed_to_reach_max_v_diff_offset - v_ego)/speed_to_reach_max_v_diff_offset), 0)
@@ -408,14 +407,6 @@ class LongitudinalMpc:
     # 限制 a_lead_tau 穩定範圍，避免數值爆炸
     #a_lead_tau = np.clip(a_lead_tau, 1e-2, 10.0)
     a_lead_tau = np.clip(a_lead_tau, 0.1, 4.0)
-    #a_lead_traj = a_lead * np.exp(-a_lead_tau * (T_IDXS**2)/2.) #靈敏的高斯模型
-    #a_lead_traj = a_lead * np.exp(-T_IDXS / a_lead_tau) #穩定的一階衰減模型
-    #=====================
-    # 設定切換門檻
-    #if v_ego < 10.0:  # 約 36 km/h 以下
-      #a_lead_traj = a_lead * np.exp(-a_lead_tau * (T_IDXS**2) / 2.) # 高靈敏度：近似高斯模型
-    #else:
-      #a_lead_traj = a_lead * np.exp(-T_IDXS / a_lead_tau) # 穩定模式：一階指數衰減
     #================================================================
     # 停止狀態下，高靈敏預測（如 Stop & Go）
     if v_ego < 5.56:
@@ -454,10 +445,6 @@ class LongitudinalMpc:
       v_lead = v_ego + 10.0
       a_lead = 0.0
       a_lead_tau = _LEAD_ACCEL_TAU
-
-    # 限制最小可追蹤距離，避免立即碰撞導致 MPC 發散
-    #min_x_lead = ((v_ego + v_lead)/2) * (v_ego - v_lead) / max(-ACCEL_MIN * 2, 1e-3)
-    #x_lead = np.clip(x_lead, min_x_lead, 1e8)
     
     min_brake = -ACCEL_MIN * 2  # 正数
     min_x = max(((v_ego + v_lead) / 2) * (v_ego - v_lead) / max(min_brake, 1e-3), 0.0)
@@ -496,13 +483,6 @@ class LongitudinalMpc:
     # 閾值（m/s）
     low_thr  = 10.0 / 3.6   # 10 km/hr
     high_thr = 70.0 / 3.6   # 70 km/hr
-    #===================================================================
-    #if self.mode == 'blended' and (v_ego < low_thr or v_ego > high_thr):
-        #self.mode = 'acc'
-        #self.set_weights(prev_accel_constraint=True, personality=personality, v_lead0=a_lead0, v_lead1=a_lead1)
-    #elif self.mode == 'acc' and (low_thr <= v_ego <= high_thr):
-        #self.mode = 'blended'
-        #self.set_weights(prev_accel_constraint=True, personality=personality, v_lead0=a_lead0, v_lead1=a_lead1)
     #===================================================================
     # 讀當前速度
     v_ego = self.x0[1]
@@ -553,11 +533,6 @@ class LongitudinalMpc:
       #x_mixed = (1 - w) * np.minimum(x_e2e, cruise_target) + w * np.maximum(x_e2e, cruise_target)
       #x_mixed = np.maximum(w * np.minimum(x_e2e, cruise_target) + (1 - w) * np.maximum(x_e2e, cruise_target), 5.0)
       x_mixed = w * np.minimum(x_e2e, cruise_target) + (1 - w) * np.maximum(x_e2e, cruise_target)
-      # ✅ 停止中：加上安全距離補償，避免靠太近
-      #if v_ego < 5.0:
-        #safe_dist = get_safe_obstacle_distance(v_ego, t_follow, stop_distance)
-        #safe_dist += 2.0
-        #x_mixed[0] = max(x_mixed[0], lead_0_obstacle[0] - safe_dist)
       
       x[:] = x_mixed  # 修正此行
 
@@ -571,20 +546,6 @@ class LongitudinalMpc:
 
       e2e_dist = x_e2e[1]
       cruise_dist = cruise_target[1]
-      # blended 模式中：固定高速使用 cruise 為主，避免 e2e 參與
-      #if v_ego > 19.45:  # 約 70 km/h 以上
-        #self.source = 'cruise'
-      #else:
-        # 低速時保留現有動態切換
-        #if self.source == 'e2e':
-          #self.source = 'e2e' if e2e_dist > cruise_dist * 0.9 else 'cruise'
-        #else:
-          #self.source = 'e2e' if e2e_dist > cruise_dist * 1.1 else 'cruise'
-#================================================
-      #if v_ego < 1.5:
-        #min_lead_obstacle = np.min([lead_0_obstacle[0], lead_1_obstacle[0]])
-        #if x_mixed[0] + get_STOP_DISTANCE(personality) > min_lead_obstacle:
-          #self.source = 'lead0'
 #================================================
       if self.source == 'e2e':
         self.source = 'e2e' if e2e_dist > cruise_dist * 0.9 else 'cruise'
