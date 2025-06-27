@@ -374,7 +374,8 @@ class LongitudinalMpc:
     a_change_v_ego = np.interp(relative_dist, [-2.0, 0.0, 2.0], [1.2, 1.0, 0.7])  # 前車遠 → 提高靈敏度
     #========================
     danger_cost = get_danger_zone_cost(v_ego)
-    
+    #cost_weights = [跟車距離誤差,權重越大，MPC 越嚴格維持安全距離 / 絕對位置：對車輛位置的懲罰 / 速度跟蹤：對車速的懲罰 
+                        #/ 加速度能量：對加速度本身的懲罰 / 加速度變化量（Δa）：懲罰連續兩步之間的加速度跳變 / jerk（控制輸入）：對加速度指令的變化率直接懲罰]
     if self.mode == 'acc':
       danger_cost = 100.
       jerk_comf = 3.0
@@ -387,7 +388,8 @@ class LongitudinalMpc:
       if v_ego < 10.0:
         j_ego_v_ego *= 15.0  # 強化低速舒適性 10
       #cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 2.5 * j_ego_v_ego]
-      cost_weights = [X_EGO_OBSTACLE_COST, 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 2.0 * j_ego_v_ego]
+      #cost_weights = [X_EGO_OBSTACLE_COST, 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 2.0 * j_ego_v_ego]
+      cost_weights = [X_EGO_OBSTACLE_COST, 2.0, 2.0, 5.0, a_change_cost * a_change_v_ego, 2.0 * j_ego_v_ego]
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, danger_cost]
     else:
       raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner cost set')
@@ -482,7 +484,7 @@ class LongitudinalMpc:
     #===================================================================
     # 閾值（m/s）
     low_thr  = 10.0 / 3.6   # km/hr to m/s
-    high_thr = 60.0 / 3.6   # km/hr to m/s
+    high_thr = 50.0 / 3.6   # km/hr to m/s
     #===================================================================
     # 讀當前速度
     v_ego = self.x0[1]
