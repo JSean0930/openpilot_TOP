@@ -69,7 +69,7 @@ def get_danger_zone_cost(v_ego):
   if v_ego < 10.0:
     return 200.0
   elif v_ego < 19.5:
-    return 250.0#np.interp(v_ego, [10.0, 19.5], [130.0, 300.0])
+    return 200.0#np.interp(v_ego, [10.0, 19.5], [130.0, 300.0])
   else:
     return 200.0#np.interp(v_ego, [19.5, 27.8], [300.0, 600.0])
 
