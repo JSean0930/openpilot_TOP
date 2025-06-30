@@ -497,7 +497,7 @@ class LongitudinalMpc:
         self.mode = 'acc'
         self.set_weights(prev_accel_constraint=True, personality=personality, v_lead0=a_lead0, v_lead1=a_lead1)
     elif self.mode == 'acc' and self.prev_v_ego <= stopped_thr and dv > 0:
-    #elif self.mode == 'acc' and dv > 0 and (self.prev_v_ego <= stopped_thr or (stopped_thr < v_ego < low_thr)):
+    #elif self.mode == 'acc' and dv > 0 and (self.prev_v_ego <= stopped_thr or (stopped_thr < v_ego < high_thr)):
     #elif self.mode == 'acc' and ((self.prev_v_ego <= stopped_thr and dv > 0) or (stopped_thr < v_ego < low_thr and dv > 0) or (low_thr < v_ego < high_thr)):
         self.mode = 'blended'
         self.set_weights(prev_accel_constraint=True, personality=personality, v_lead0=a_lead0, v_lead1=a_lead1)
