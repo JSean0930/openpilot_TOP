@@ -35,7 +35,7 @@ COST_DIM = COST_E_DIM + 1
 CONSTR_DIM = 4
 
 X_EGO_OBSTACLE_COST = 2. # 降低避障成本以避免過於保守
-X_EGO_COST = 0.  # 增加以提升車距追蹤精度
+X_EGO_COST = 1.  # 增加以提升車距追蹤精度
 V_EGO_COST = 0.  # 適度權重於自車速度
 A_EGO_COST = 0.  # 對加速度施加小懲罰以平滑動作曲線
 J_EGO_COST = 5.0  # 降低 jerk 懲罰以提高反應靈敏度
@@ -388,8 +388,8 @@ class LongitudinalMpc:
       if v_ego < 10.0:
         j_ego_v_ego *= 10.0  # 強化低速舒適性 10
       #cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 2.5 * j_ego_v_ego]
-      cost_weights = [X_EGO_OBSTACLE_COST, 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 2.0 * j_ego_v_ego]
-      #cost_weights = [X_EGO_OBSTACLE_COST, 0.5, 1.0, 8.0, a_change_cost * a_change_v_ego, 2.0 * j_ego_v_ego]
+      #cost_weights = [X_EGO_OBSTACLE_COST, 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 2.0 * j_ego_v_ego]
+      cost_weights = [X_EGO_OBSTACLE_COST, 0.5, 1.0, 8.0, a_change_cost * a_change_v_ego, 2.0 * j_ego_v_ego]
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, danger_cost]
     else:
       raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner cost set')
