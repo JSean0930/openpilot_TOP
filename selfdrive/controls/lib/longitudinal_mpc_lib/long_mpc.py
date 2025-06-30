@@ -491,7 +491,7 @@ class LongitudinalMpc:
     # 上一週期速度
     v_prev = self.prev_v_ego
     dv = v_ego - v_prev
-    stopped_thr = 0.15          # 視為「靜止」的速度阈值
+    stopped_thr = 0.5          # 視為「靜止」的速度阈值
 
     if self.mode == 'blended' and ((dv < 0 and v_ego <= low_thr) or v_ego > high_thr):
         self.mode = 'acc'
@@ -532,8 +532,8 @@ class LongitudinalMpc:
       self.x_e2e_smooth = 0.8 * self.x_e2e_smooth + 0.2 * x_e2e if hasattr(self, "x_e2e_smooth") else x_e2e.copy()
       x_e2e = self.x_e2e_smooth
       # 混合 e2e 和 cruise，根據速度平滑插值
-      v_low, v_high = 0.15, high_thr
-      w = np.clip((v_ego - v_low) / (v_high - v_low), 0.0, 0.5)
+      v_low, v_high = 0.5, high_thr
+      w = np.clip((v_ego - v_low) / (v_high - v_low), 0.0, 0.4)
       #x_mixed = (1 - w) * np.minimum(x_e2e, cruise_target) + w * np.maximum(x_e2e, cruise_target)
       #x_mixed = np.maximum(w * np.minimum(x_e2e, cruise_target) + (1 - w) * np.maximum(x_e2e, cruise_target), 5.0)
       x_mixed = w * np.minimum(x_e2e, cruise_target) + (1 - w) * np.maximum(x_e2e, cruise_target)
