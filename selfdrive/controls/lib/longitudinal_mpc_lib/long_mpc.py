@@ -135,11 +135,11 @@ def get_adaptive_T_FOLLOW(v_ego, a_lead, personality=log.LongitudinalPersonality
 
 def get_STOP_DISTANCE(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
-    return 7.0
+    return 6.0
   elif personality==log.LongitudinalPersonality.standard:
-    return 7.0
+    return 6.0
   elif personality==log.LongitudinalPersonality.aggressive:
-    return 7.0
+    return 6.0
   else:
     raise NotImplementedError("Longitudinal personality not supported")
 
@@ -386,9 +386,9 @@ class LongitudinalMpc:
       a_change_cost = 40.0 if prev_accel_constraint else 0
       #cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 1.0]
       if v_ego < 10.0:
-        j_ego_v_ego *= 10.0  # 強化低速舒適性 10
+        j_ego_v_ego *= 15.0  # 強化低速舒適性 10
       #cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 2.5 * j_ego_v_ego]
-      cost_weights = [X_EGO_OBSTACLE_COST, 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 2.0 * j_ego_v_ego]
+      cost_weights = [X_EGO_OBSTACLE_COST, 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 2.5 * j_ego_v_ego]
       #cost_weights = [X_EGO_OBSTACLE_COST, 0.5, 1.0, 8.0, a_change_cost * a_change_v_ego, 2.0 * j_ego_v_ego]
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, danger_cost]
     else:
@@ -498,7 +498,7 @@ class LongitudinalMpc:
         self.set_weights(prev_accel_constraint=True, personality=personality, v_lead0=a_lead0, v_lead1=a_lead1)
     #elif self.mode == 'acc' and self.prev_v_ego <= stopped_thr and dv > 0:
     #elif self.mode == 'acc' and dv > 0 and (self.prev_v_ego <= stopped_thr or (stopped_thr < v_ego < high_thr)):
-    elif self.mode == 'acc' and ((self.prev_v_ego <= stopped_thr and dv > 0) or (stopped_thr < v_ego < low_thr and dv > 0) or (low_thr < v_ego < high_thr)):
+    elif self.mode == 'acc' and ((self.prev_v_ego <= stopped_thr and dv > 0) or (stopped_thr < v_ego < high_thr and (a_lead0 > 0.3 or a_lead1 > 0.3))):
         self.mode = 'blended'
         self.set_weights(prev_accel_constraint=True, personality=personality, v_lead0=a_lead0, v_lead1=a_lead1)
       
