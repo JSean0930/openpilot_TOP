@@ -483,7 +483,7 @@ class LongitudinalMpc:
     self.params[:,1] = ACCEL_MAX
     #===================================================================
     # 閾值（m/s）
-    low_thr  = 10.0 / 3.6   # km/hr to m/s
+    low_thr  = 15.0 / 3.6   # km/hr to m/s
     high_thr = 60.0 / 3.6   # km/hr to m/s
     #===================================================================
     # 讀當前速度
@@ -496,9 +496,9 @@ class LongitudinalMpc:
     if self.mode == 'blended' and ((dv < 0 and v_ego <= low_thr) or v_ego > high_thr):
         self.mode = 'acc'
         self.set_weights(prev_accel_constraint=True, personality=personality, v_lead0=a_lead0, v_lead1=a_lead1)
-    elif self.mode == 'acc' and self.prev_v_ego <= stopped_thr and dv > 0:
+    #elif self.mode == 'acc' and self.prev_v_ego <= stopped_thr and dv > 0:
     #elif self.mode == 'acc' and dv > 0 and (self.prev_v_ego <= stopped_thr or (stopped_thr < v_ego < high_thr)):
-    #elif self.mode == 'acc' and ((self.prev_v_ego <= stopped_thr and dv > 0) or (stopped_thr < v_ego < low_thr and dv > 0) or (low_thr < v_ego < high_thr)):
+    elif self.mode == 'acc' and ((self.prev_v_ego <= stopped_thr and dv > 0) or (stopped_thr < v_ego < low_thr and dv > 0) or (low_thr < v_ego < high_thr)):
         self.mode = 'blended'
         self.set_weights(prev_accel_constraint=True, personality=personality, v_lead0=a_lead0, v_lead1=a_lead1)
       
@@ -535,8 +535,8 @@ class LongitudinalMpc:
       v_low, v_high = 0.5, high_thr
       w = np.clip((v_ego - v_low) / (v_high - v_low), 0.0, 0.4)
       #x_mixed = (1 - w) * np.minimum(x_e2e, cruise_target) + w * np.maximum(x_e2e, cruise_target)
-      #x_mixed = np.maximum(w * np.minimum(x_e2e, cruise_target) + (1 - w) * np.maximum(x_e2e, cruise_target), 5.0)
-      x_mixed = w * np.minimum(x_e2e, cruise_target) + (1 - w) * np.maximum(x_e2e, cruise_target)
+      x_mixed = 0.3 * np.minimum(x_e2e, cruise_target) + 0.7 * np.maximum(x_e2e, cruise_target)
+      #x_mixed = w * np.minimum(x_e2e, cruise_target) + (1 - w) * np.maximum(x_e2e, cruise_target)
       
       x[:] = x_mixed  # 修正此行
 
