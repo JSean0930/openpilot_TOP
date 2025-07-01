@@ -126,7 +126,7 @@ def get_adaptive_T_FOLLOW(v_ego, a_lead, personality=log.LongitudinalPersonality
   base_t_follow = get_T_FOLLOW(personality)
 
   # 當前車有明顯減速時，額外增加安全距離
-  if a_lead < -2.5:
+  if a_lead < -3.0:
     # 增加最多0.3秒追車時距，視前車減速度線性調整
     extra_t_follow = np.clip(-0.3 * a_lead, 0.0, 0.3)
     base_t_follow += extra_t_follow
