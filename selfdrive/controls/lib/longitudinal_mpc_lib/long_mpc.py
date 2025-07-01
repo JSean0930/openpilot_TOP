@@ -67,7 +67,7 @@ def get_danger_zone_cost(v_ego):
   # 線性插值：0 m/s → 100，33.3 m/s (120 km/h) → 300
   #return np.interp(v_ego, [0.0, 27.78], [120.0, 500.0])
   if v_ego < 10.0:
-    return 200.0
+    return 250.0
   elif v_ego < 19.5:
     return 250.0#np.interp(v_ego, [10.0, 19.5], [130.0, 300.0])
   else:
@@ -86,9 +86,9 @@ def get_lead_danger_factor(v_ego):
 
 def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
-    return 1.0
+    return 1.5
   elif personality==log.LongitudinalPersonality.standard:
-    return 1.0
+    return 1.3
   elif personality==log.LongitudinalPersonality.aggressive:
     return 0.3
   else:
@@ -126,7 +126,7 @@ def get_adaptive_T_FOLLOW(v_ego, a_lead, personality=log.LongitudinalPersonality
   base_t_follow = get_T_FOLLOW(personality)
 
   # 當前車有明顯減速時，額外增加安全距離
-  if a_lead < -2.0:
+  if a_lead < -2.5:
     # 增加最多0.3秒追車時距，視前車減速度線性調整
     extra_t_follow = np.clip(-0.3 * a_lead, 0.0, 0.3)
     base_t_follow += extra_t_follow
@@ -383,7 +383,7 @@ class LongitudinalMpc:
       cost_weights = [X_EGO_OBSTACLE_COST, X_EGO_COST, V_EGO_COST, A_EGO_COST, jerk_factor * a_change_cost * a_change_v_ego, jerk_comf * jerk_factor * J_EGO_COST * j_ego_v_ego]
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, danger_cost]
     elif self.mode == 'blended':
-      a_change_cost = 50.0 if prev_accel_constraint else 0
+      a_change_cost = 40.0 if prev_accel_constraint else 0
       #cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 1.0]
       if v_ego < 10.0:
         j_ego_v_ego *= 10.0  # 強化低速舒適性 10
