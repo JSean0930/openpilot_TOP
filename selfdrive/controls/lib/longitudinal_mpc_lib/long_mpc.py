@@ -39,7 +39,7 @@ X_EGO_COST = 0.  # 增加以提升車距追蹤精度
 V_EGO_COST = 0.  # 適度權重於自車速度
 A_EGO_COST = 0.  # 對加速度施加小懲罰以平滑動作曲線
 J_EGO_COST = 5.0  # 降低 jerk 懲罰以提高反應靈敏度
-A_CHANGE_COST = 150.  # 降低以提供更大加速自由度
+A_CHANGE_COST = 100.  # 降低以提供更大加速自由度
 #DANGER_ZONE_COST = 300.
 CRASH_DISTANCE = .25
 #LEAD_DANGER_FACTOR = 0.85 #0.75
@@ -377,9 +377,9 @@ class LongitudinalMpc:
     #cost_weights = [跟車距離誤差,權重越大，MPC 越嚴格維持安全距離 / 絕對位置：對車輛位置的懲罰 / 速度跟蹤：對車速的懲罰 
                         #/ 加速度能量：對加速度本身的懲罰 / 加速度變化量（Δa）：懲罰連續兩步之間的加速度跳變 / jerk（控制輸入）：對加速度指令的變化率直接懲罰]
     if self.mode == 'acc':
-      danger_cost = 100.
+      danger_cost = 130.
       jerk_comf = 3.0
-      if v_ego > 25.0:
+      if v_ego > 22.23:
         jerk_comf *= 3.0
         danger_cost = 200.
       a_change_cost = A_CHANGE_COST if prev_accel_constraint else 0
@@ -413,15 +413,16 @@ class LongitudinalMpc:
     a_lead_tau = np.clip(a_lead_tau, 0.1, 4.0)
     #================================================================
     # 停止狀態下，高靈敏預測（如 Stop & Go）
-    if v_ego < 5.56:
+    if v_ego < 10.0:
       # 若前車真的明顯在啟動，允許快速起步
-      if v_lead < 1.0:
+      #if v_lead < 1.0:
+      if a_lead > 0.3:
         sensitivity_gain = 4.0 # 起步靈敏
       else:
         sensitivity_gain = 3.0 # 煞車靈敏
       a_lead_traj = a_lead * np.exp(-sensitivity_gain * a_lead_tau * (T_IDXS**2) / 2.)
     # 壅塞狀態（低速密集跟車）
-    elif v_ego < 10.0:
+    elif v_ego < 12.5:
       sensitivity_gain = 2.0
       a_lead_traj = a_lead * np.exp(-sensitivity_gain * a_lead_tau * (T_IDXS**2) / 2.)
 
