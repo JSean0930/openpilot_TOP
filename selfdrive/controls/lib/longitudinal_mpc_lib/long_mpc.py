@@ -496,21 +496,15 @@ class LongitudinalMpc:
     stopped_thr = 0.5          # 視為「靜止」的速度阈值
 
     #==================================================================
-    #if self.mode == 'blended' and ((dv < 0 and v_ego <= low_thr) or v_ego > high_thr):
-        #self.mode = 'acc'
-        #self.set_weights(prev_accel_constraint=True, personality=personality, v_lead0=a_lead0, v_lead1=a_lead1)
+    if self.mode == 'blended' and ((dv < 0 and v_ego <= low_thr) or v_ego > high_thr):
+        self.mode = 'acc'
+        self.set_weights(prev_accel_constraint=True, personality=personality, v_lead0=a_lead0, v_lead1=a_lead1)
     ##===elif self.mode == 'acc' and self.prev_v_ego <= stopped_thr and dv > 0:
     ##===elif self.mode == 'acc' and dv > 0 and (self.prev_v_ego <= stopped_thr or (stopped_thr < v_ego < high_thr)):
-    #elif self.mode == 'acc' and ((self.prev_v_ego <= stopped_thr and dv > 0) or (stopped_thr < v_ego < high_thr and (a_lead0 > 0.3 or a_lead1 > 0.3))):
-        #self.mode = 'blended'
-        #self.set_weights(prev_accel_constraint=True, personality=personality, v_lead0=a_lead0, v_lead1=a_lead1)
-    #==================================================================
-    if self.mode == 'blended' and v_ego >= high_thr:
-        self.mode = 'acc'
-    elif self.mode == 'acc' and v_ego < high_thr:
+    elif self.mode == 'acc' and ((self.prev_v_ego <= stopped_thr and dv > 0) or (stopped_thr < v_ego < high_thr and (a_lead0 > 0.3 or a_lead1 > 0.3))):
         self.mode = 'blended'
+        self.set_weights(prev_accel_constraint=True, personality=personality, v_lead0=a_lead0, v_lead1=a_lead1)
 
-    #==================================================================
     # 更新 prev_v_ego，供下一次使用
     self.prev_v_ego = v_ego
     #===================================================================
@@ -547,8 +541,15 @@ class LongitudinalMpc:
       x_mixed = 0.3 * np.minimum(x_e2e, cruise_target) + 0.7 * np.maximum(x_e2e, cruise_target)
       #x_mixed = w * np.minimum(x_e2e, cruise_target) + (1 - w) * np.maximum(x_e2e, cruise_target)
       
-      #x[:] = x_mixed  # 修正此行
-      x[:] = x_e2e if v_ego <= low_thr else x_mixed
+      x[:] = x_mixed  # 修正此行
+      
+      e2e_dist = x_e2e[1]
+      cruise_dist = cruise_target[1]
+      
+      if self.source == 'e2e':
+        self.source = 'e2e' if e2e_dist > cruise_dist * 0.9 else 'cruise'
+      else:
+        self.source = 'e2e' if e2e_dist > cruise_dist * 1.1 else 'cruise'
 
       self.yref[:,1] = x
       self.yref[:,2] = v
@@ -558,17 +559,6 @@ class LongitudinalMpc:
         self.solver.set(i, "yref", self.yref[i])
       self.solver.set(N, "yref", self.yref[N][:COST_E_DIM])
 
-      e2e_dist = x_e2e[1]
-      cruise_dist = cruise_target[1]
-#================================================
-      if v_ego <= low_thr:
-        self.source == 'e2e'
-      else:
-        if self.source == 'e2e':
-          self.source = 'e2e' if e2e_dist > cruise_dist * 0.9 else 'cruise'
-        else:
-          self.source = 'e2e' if e2e_dist > cruise_dist * 1.1 else 'cruise'
-#===============================================
     else:
       raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner update')
 
