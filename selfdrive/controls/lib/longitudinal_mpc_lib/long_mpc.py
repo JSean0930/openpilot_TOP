@@ -548,8 +548,27 @@ class LongitudinalMpc:
       #x_mixed = w * np.minimum(x_e2e, cruise_target) + (1 - w) * np.maximum(x_e2e, cruise_target)
       
       #x[:] = x_mixed  # 修正此行
-      x[:] = x_e2e if v_ego <= low_thr else x_mixed
+      #提前計算 e2e 與 cruise 預測距離（source 決策用）
+      e2e_dist = x_e2e[1]
+      cruise_dist = cruise_target[1]
 
+      #若低速且前車未加速 → 保留 e2e；否則用混合
+      lead_accel = (a_lead0 > 0.3 and radarstate.leadOne.status) or \
+                     (a_lead1 > 0.3 and radarstate.leadTwo.status)
+      
+      # ✅ 決定使用 e2e 或 x_mixed 軌跡
+      if v_ego <= low_thr and not lead_accel:
+        x[:] = x_e2e
+        self.source = 'e2e'
+      else:
+        x[:] = x_mixed
+      
+        # 動態判斷來源
+        if self.source == 'e2e':
+          self.source = 'e2e' if e2e_dist > cruise_dist * 0.9 else 'cruise'
+        else:
+          self.source = 'e2e' if e2e_dist > cruise_dist * 1.1 else 'cruise'
+      # 更新 MPC yref
       self.yref[:,1] = x
       self.yref[:,2] = v
       self.yref[:,3] = a
@@ -558,17 +577,6 @@ class LongitudinalMpc:
         self.solver.set(i, "yref", self.yref[i])
       self.solver.set(N, "yref", self.yref[N][:COST_E_DIM])
 
-      e2e_dist = x_e2e[1]
-      cruise_dist = cruise_target[1]
-#================================================
-      if v_ego <= low_thr:
-        self.source == 'e2e'
-      else:
-        if self.source == 'e2e':
-          self.source = 'e2e' if e2e_dist > cruise_dist * 0.9 else 'cruise'
-        else:
-          self.source = 'e2e' if e2e_dist > cruise_dist * 1.1 else 'cruise'
-#===============================================
     else:
       raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner update')
 
