@@ -507,7 +507,7 @@ class LongitudinalMpc:
         self.set_weights(prev_accel_constraint=True, personality=personality, v_lead0=a_lead0, v_lead1=a_lead1)
     #==================================================================
     if self.mode == 'blended' and v_ego > high_thr:
-        
+        self.mode = 'acc'
 
     #==================================================================
     # 更新 prev_v_ego，供下一次使用
