@@ -67,7 +67,7 @@ def get_danger_zone_cost(v_ego):
   # 線性插值：0 m/s → 100，33.3 m/s (120 km/h) → 300
   #return np.interp(v_ego, [0.0, 27.78], [120.0, 500.0])
   if v_ego < 10.0:
-    return 350.0
+    return 200.0
   elif v_ego < 19.5:
     return 250.0#np.interp(v_ego, [10.0, 19.5], [130.0, 300.0])
   else:
@@ -135,11 +135,11 @@ def get_adaptive_T_FOLLOW(v_ego, a_lead, personality=log.LongitudinalPersonality
 
 def get_STOP_DISTANCE(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
-    return 6.0
+    return 5.0
   elif personality==log.LongitudinalPersonality.standard:
-    return 6.0
+    return 5.0
   elif personality==log.LongitudinalPersonality.aggressive:
-    return 6.0
+    return 5.0
   else:
     raise NotImplementedError("Longitudinal personality not supported")
 
@@ -377,7 +377,7 @@ class LongitudinalMpc:
     #cost_weights = [跟車距離誤差,權重越大，MPC 越嚴格維持安全距離 / 絕對位置：對車輛位置的懲罰 / 速度跟蹤：對車速的懲罰 
                         #/ 加速度能量：對加速度本身的懲罰 / 加速度變化量（Δa）：懲罰連續兩步之間的加速度跳變 / jerk（控制輸入）：對加速度指令的變化率直接懲罰]
     if self.mode == 'acc':
-      danger_cost = 130.
+      danger_cost = 110.
       jerk_comf = 3.0
       if v_ego > 22.23:
         jerk_comf *= 3.0
@@ -486,7 +486,7 @@ class LongitudinalMpc:
     #===================================================================
     # 閾值（m/s）
     low_thr  = 10.0 / 3.6   # km/hr to m/s
-    high_thr = 60.0 / 3.6   # km/hr to m/s
+    high_thr = 30.0 / 3.6   # km/hr to m/s
     #===================================================================
     # 讀當前速度
     v_ego = self.x0[1]
@@ -505,9 +505,9 @@ class LongitudinalMpc:
         #self.mode = 'blended'
         #self.set_weights(prev_accel_constraint=True, personality=personality, v_lead0=a_lead0, v_lead1=a_lead1)
     #==================================================================
-    if v_ego >= high_thr:
+    if v_ego > high_thr:
         self.mode = 'acc'
-    elif v_ego < high_thr:
+    elif v_ego <= high_thr:
         self.mode = 'blended'
 
     #==================================================================
@@ -557,7 +557,7 @@ class LongitudinalMpc:
                      (a_lead1 > 0.3 and radarstate.leadTwo.status)
       
       # ✅ 決定使用 e2e 或 x_mixed 軌跡
-      if v_ego <= low_thr and not lead_accel:
+      if v_ego <= high_thr and not lead_accel:
         x[:] = x_e2e
         self.source = 'e2e'
       else:
