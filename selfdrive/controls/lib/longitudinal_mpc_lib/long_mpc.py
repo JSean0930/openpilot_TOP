@@ -421,7 +421,7 @@ class LongitudinalMpc:
         sensitivity_gain = 3.0 # 煞車靈敏
       a_lead_traj = a_lead * np.exp(-sensitivity_gain * a_lead_tau * (T_IDXS**2) / 2.)
     # 壅塞狀態（低速密集跟車）
-    elif v_ego < 12.5:
+    elif v_ego < 16.67:
       sensitivity_gain = 2.0
       a_lead_traj = a_lead * np.exp(-sensitivity_gain * a_lead_tau * (T_IDXS**2) / 2.)
 
