@@ -63,12 +63,20 @@ COMFORT_BRAKE = 2.5
 CRUISE_MIN_ACCEL = -1.2
 CRUISE_MAX_ACCEL = 1.6
 
+#===================================================================
+# 閾值（m/s）
+low_thr  = 20.0 / 3.6   # km/hr to m/s
+mid_thr = 40.0 / 3.6   # km/hr to m/s
+high_thr = 70.0 / 3.6
+#===================================================================
+
+
 def get_danger_zone_cost(v_ego):
   # 線性插值：0 m/s → 100，33.3 m/s (120 km/h) → 300
   #return np.interp(v_ego, [0.0, 27.78], [120.0, 500.0])
-  if v_ego < 10.0:
+  if v_ego <= mid_thr:
     return 200.0
-  elif v_ego < 19.5:
+  elif v_ego <= high_thr:
     return 250.0#np.interp(v_ego, [10.0, 19.5], [130.0, 300.0])
   else:
     return 300.0#np.interp(v_ego, [19.5, 27.8], [300.0, 600.0])
@@ -77,9 +85,9 @@ def get_danger_zone_cost(v_ego):
   #return np.interp(v_ego, [0.0, 33.3], [1.0, 1.4])  # 線性插值，隨速度提升危險因子增加
 
 def get_lead_danger_factor(v_ego):
-  if v_ego <= 13.89:
+  if v_ego <= mid_thr:
     return 0.9
-  elif v_ego <= 22.22:
+  elif v_ego <= high_thr:
     return 1.0
   else:
     return 1.1
@@ -379,7 +387,7 @@ class LongitudinalMpc:
     if self.mode == 'acc':
       danger_cost = 150.
       jerk_comf = 3.0
-      if v_ego > 22.23:
+      if v_ego > high_thr:
         jerk_comf *= 3.0
       a_change_cost = A_CHANGE_COST if prev_accel_constraint else 0
       cost_weights = [X_EGO_OBSTACLE_COST, X_EGO_COST, V_EGO_COST, A_EGO_COST, jerk_factor * a_change_cost * a_change_v_ego, jerk_comf * jerk_factor * J_EGO_COST * j_ego_v_ego]
@@ -395,7 +403,7 @@ class LongitudinalMpc:
         x_weight = 0.1
         x_obstacle_weight = 0.0
         
-      if v_ego < 10.0:
+      if v_ego <= mid_thr:
         j_ego_v_ego *= 20.0  # 強化低速舒適性 15
       #cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 2.5 * j_ego_v_ego]
       cost_weights = [x_obstacle_weight, x_weight, 0.2, 5.0, a_change_cost * a_change_v_ego, 2.5 * j_ego_v_ego]
@@ -420,7 +428,7 @@ class LongitudinalMpc:
     a_lead_tau = np.clip(a_lead_tau, 0.1, 4.0)
     #================================================================
     # 停止狀態下，高靈敏預測（如 Stop & Go）
-    if v_ego < 10.0:
+    if v_ego <= mid_thr:
       # 若前車真的明顯在啟動，允許快速起步
       #if v_lead < 1.0:
       if a_lead > 0.3:
@@ -429,7 +437,7 @@ class LongitudinalMpc:
         sensitivity_gain = 3.0 # 煞車靈敏
       a_lead_traj = a_lead * np.exp(-sensitivity_gain * a_lead_tau * (T_IDXS**2) / 2.)
     # 壅塞狀態（低速密集跟車）
-    elif v_ego < 16.67:
+    elif v_ego <= high_thr:
       sensitivity_gain = 2.0
       a_lead_traj = a_lead * np.exp(-sensitivity_gain * a_lead_tau * (T_IDXS**2) / 2.)
 
@@ -493,8 +501,8 @@ class LongitudinalMpc:
     self.params[:,1] = ACCEL_MAX
     #===================================================================
     # 閾值（m/s）
-    low_thr  = 10.0 / 3.6   # km/hr to m/s
-    high_thr = 30.0 / 3.6   # km/hr to m/s
+    #low_thr  = 10.0 / 3.6   # km/hr to m/s
+    #high_thr = 30.0 / 3.6   # km/hr to m/s
     #===================================================================
     # 讀當前速度
     v_ego = self.x0[1]
@@ -513,10 +521,10 @@ class LongitudinalMpc:
         #self.mode = 'blended'
         #self.set_weights(prev_accel_constraint=True, personality=personality, v_lead0=a_lead0, v_lead1=a_lead1)
     #==================================================================
-    if v_ego > high_thr:
+    if v_ego > mid_thr:
         self.mode = 'acc'
         self.set_weights(prev_accel_constraint=True, personality=personality, v_lead0=a_lead0, v_lead1=a_lead1)
-    elif v_ego <= high_thr:
+    elif v_ego <= mid_thr:
         self.mode = 'blended'
         self.set_weights(prev_accel_constraint=True, personality=personality, v_lead0=a_lead0, v_lead1=a_lead1)
 
@@ -551,7 +559,7 @@ class LongitudinalMpc:
       self.x_e2e_smooth = 0.8 * self.x_e2e_smooth + 0.2 * x_e2e if hasattr(self, "x_e2e_smooth") else x_e2e.copy()
       x_e2e = self.x_e2e_smooth
       # 混合 e2e 和 cruise，根據速度平滑插值
-      v_low, v_high = 0.5, high_thr
+      v_low, v_high = 0.5, mid_thr
       w = np.clip((v_ego - v_low) / (v_high - v_low), 0.0, 0.4)
       #x_mixed = (1 - w) * np.minimum(x_e2e, cruise_target) + w * np.maximum(x_e2e, cruise_target)
       x_mixed = 0.3 * np.minimum(x_e2e, cruise_target) + 0.7 * np.maximum(x_e2e, cruise_target)
@@ -568,7 +576,7 @@ class LongitudinalMpc:
       
       # ✅ 決定使用 e2e 或 x_mixed 軌跡
       #if v_ego <= high_thr and not lead_accel:
-      if v_ego <= high_thr:
+      if v_ego <= mid_thr:
         x[:] = x_e2e
         self.source = 'e2e'
       else:
