@@ -377,7 +377,7 @@ class LongitudinalMpc:
     #cost_weights = [跟車距離誤差,權重越大，MPC 越嚴格維持安全距離 / 絕對位置：對車輛位置的懲罰 / 速度跟蹤：對車速的懲罰 
                         #/ 加速度能量：對加速度本身的懲罰 / 加速度變化量（Δa）：懲罰連續兩步之間的加速度跳變 / jerk（控制輸入）：對加速度指令的變化率直接懲罰]
     if self.mode == 'acc':
-      danger_cost = 110.
+      danger_cost = 150.
       jerk_comf = 3.0
       if v_ego > 22.23:
         jerk_comf *= 3.0
