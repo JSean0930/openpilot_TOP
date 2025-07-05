@@ -387,6 +387,14 @@ class LongitudinalMpc:
     elif self.mode == 'blended':
       a_change_cost = 40.0 if prev_accel_constraint else 0
       #cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 1.0]
+      # ✅ 如果是 e2e 主導，增加 MPC 對軌跡貼合懲罰（例如貼近模型預測軌跡）
+      if self.source == 'e2e':
+        x_weight = 1.5  # 原本可能是 0.1，加強貼合程度
+        x_obstacle_weight = 2.0
+      else:
+        x_weight = 0.1
+        x_obstacle_weight = 0.0
+        
       if v_ego < 10.0:
         j_ego_v_ego *= 20.0  # 強化低速舒適性 15
       cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 2.5 * j_ego_v_ego]
