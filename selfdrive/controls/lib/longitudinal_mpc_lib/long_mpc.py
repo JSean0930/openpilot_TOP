@@ -567,7 +567,8 @@ class LongitudinalMpc:
                      (a_lead1 > 0.3 and radarstate.leadTwo.status)
       
       # ✅ 決定使用 e2e 或 x_mixed 軌跡
-      if v_ego <= high_thr and not lead_accel:
+      #if v_ego <= high_thr and not lead_accel:
+      if v_ego <= high_thr:
         x[:] = x_e2e
         self.source = 'e2e'
       else:
