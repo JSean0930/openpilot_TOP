@@ -390,7 +390,7 @@ class LongitudinalMpc:
       # ✅ 如果是 e2e 主導，增加 MPC 對軌跡貼合懲罰（例如貼近模型預測軌跡）
       if self.source == 'e2e':
         x_weight = 1.5  # 原本可能是 0.1，加強貼合程度
-        x_obstacle_weight = 2.0
+        x_obstacle_weight = 0.5
       else:
         x_weight = 0.1
         x_obstacle_weight = 0.0
