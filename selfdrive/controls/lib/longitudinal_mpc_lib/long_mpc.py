@@ -75,11 +75,11 @@ def get_danger_zone_cost(v_ego):
   # 線性插值：0 m/s → 100，33.3 m/s (120 km/h) → 300
   #return np.interp(v_ego, [0.0, 27.78], [120.0, 500.0])
   if v_ego <= mid_thr:
-    return 200.0
+    return 150.0#200.0
   elif v_ego <= high_thr:
-    return 250.0#np.interp(v_ego, [10.0, 19.5], [130.0, 300.0])
+    return 200.0#250.0#np.interp(v_ego, [10.0, 19.5], [130.0, 300.0])
   else:
-    return 300.0#np.interp(v_ego, [19.5, 27.8], [300.0, 600.0])
+    return 250.0#300.0#np.interp(v_ego, [19.5, 27.8], [300.0, 600.0])
 
 #def get_lead_danger_factor(v_ego):
   #return np.interp(v_ego, [0.0, 33.3], [1.0, 1.4])  # 線性插值，隨速度提升危險因子增加
@@ -385,7 +385,7 @@ class LongitudinalMpc:
     #cost_weights = [跟車距離誤差,權重越大，MPC 越嚴格維持安全距離 / 絕對位置：對車輛位置的懲罰 / 速度跟蹤：對車速的懲罰 
                         #/ 加速度能量：對加速度本身的懲罰 / 加速度變化量（Δa）：懲罰連續兩步之間的加速度跳變 / jerk（控制輸入）：對加速度指令的變化率直接懲罰]
     if self.mode == 'acc':
-      danger_cost = 150.
+      #danger_cost = 150.
       jerk_comf = 3.0
       if v_ego > high_thr:
         jerk_comf *= 3.0
