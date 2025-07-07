@@ -160,7 +160,7 @@ def get_stopped_equivalence_factor(v_lead, v_ego):
   speed_to_reach_max_v_diff_offset = 8 #26,12 # in kp/h
   speed_to_reach_max_v_diff_offset = speed_to_reach_max_v_diff_offset * CV.KPH_TO_MS
   delta_speed = v_lead - v_ego
-  if np.all(delta_speed > 0.5):
+  if np.all(delta_speed > 0.0):
     v_diff_offset = (np.clip(delta_speed, 0, 5)) ** 2.5
     v_diff_offset = np.clip(v_diff_offset, 0, v_diff_offset_max)
     v_diff_offset = np.maximum(v_diff_offset * ((speed_to_reach_max_v_diff_offset - v_ego)/speed_to_reach_max_v_diff_offset), 0)
@@ -404,7 +404,7 @@ class LongitudinalMpc:
         x_obstacle_weight = 0.0
         
       if v_ego <= mid_thr:
-        j_ego_v_ego *= 20.0  # 強化低速舒適性 15
+        j_ego_v_ego *= 10.0  # 強化低速舒適性 20
       #cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 2.5 * j_ego_v_ego]
       cost_weights = [x_obstacle_weight, x_weight, 0.2, 5.0, a_change_cost * a_change_v_ego, 2.5 * j_ego_v_ego]
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, danger_cost]
