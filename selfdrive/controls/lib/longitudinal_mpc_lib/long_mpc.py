@@ -550,7 +550,7 @@ class LongitudinalMpc:
 
     elif self.mode == 'blended':
       danger_factor = get_lead_danger_factor(v_ego)
-      self.params[:,5] = danger_factor
+      self.params[:,5] = 0.6#danger_factor
       x_obstacles = np.column_stack([lead_0_obstacle, lead_1_obstacle])
       
       # cruise 目標距離（略為積極）
