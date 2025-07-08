@@ -378,8 +378,8 @@ class LongitudinalMpc:
     v_lead = v_lead0 if v_lead0 < v_lead1 else v_lead1
     relative_dist = np.clip(v_lead - v_ego, -5.0, 5.0)
 
-    j_ego_v_ego = np.interp(v_ego, [0, 10, 13.8], [0.3, 1.0, 2.0])       # 高速 jerk cost 高
-    a_change_v_ego = np.interp(relative_dist, [-2.0, 0.0, 2.0], [1.2, 1.0, 0.7])  # 前車遠 → 提高靈敏度
+    j_ego_v_ego = np.interp(v_ego, [0, mid_thr, high_thr], [0.3, 1.0, 2.0])       # 高速 jerk cost 高
+    a_change_v_ego = np.interp(relative_dist, [-1.0, 0.0, 1.0], [1.2, 1.0, 0.5])  # 前車遠 → 提高靈敏度
     #========================
     danger_cost = get_danger_zone_cost(v_ego)
     #cost_weights = [跟車距離誤差,權重越大，MPC 越嚴格維持安全距離 / 絕對位置：對車輛位置的懲罰 / 速度跟蹤：對車速的懲罰 
@@ -404,8 +404,8 @@ class LongitudinalMpc:
       else:
         x_weight = 0.1
         x_obstacle_weight = 0.0
-        a_change_gain = 0.2
-        a_change_gain = 0.2
+        jerk_gain = 1.0
+        a_change_gain = 1.0
         
       if v_ego <= mid_thr:
         j_ego_v_ego *= 1.0  # 強化低速舒適性 20
