@@ -398,15 +398,19 @@ class LongitudinalMpc:
       # ✅ 如果是 e2e 主導，增加 MPC 對軌跡貼合懲罰（例如貼近模型預測軌跡）
       if self.source == 'e2e':
         x_weight = 1.5  # 原本可能是 0.1，加強貼合程度
-        x_obstacle_weight = 0.5
+        x_obstacle_weight = 0.1#0.5
+        jerk_gain = 0.5
+        a_change_gain = 0.2
       else:
         x_weight = 0.1
         x_obstacle_weight = 0.0
+        a_change_gain = 0.2
+        a_change_gain = 0.2
         
       if v_ego <= mid_thr:
-        j_ego_v_ego *= 10.0  # 強化低速舒適性 20
+        j_ego_v_ego *= 1.0  # 強化低速舒適性 20
       #cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 2.5 * j_ego_v_ego]
-      cost_weights = [x_obstacle_weight, x_weight, 0.2, 5.0, a_change_cost * a_change_v_ego, 2.5 * j_ego_v_ego]
+      cost_weights = [x_obstacle_weight, x_weight, 0.2, 5.0, a_change_cost * a_change_v_ego * a_change_gain, 2.5 * j_ego_v_ego * jerk_gain]
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, danger_cost]
     else:
       raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner cost set')
