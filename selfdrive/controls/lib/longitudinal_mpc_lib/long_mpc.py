@@ -397,10 +397,10 @@ class LongitudinalMpc:
       #cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 1.0]
       # ✅ 如果是 e2e 主導，增加 MPC 對軌跡貼合懲罰（例如貼近模型預測軌跡）
       if self.source == 'e2e':
-        x_weight = 1.5  # 原本可能是 0.1，加強貼合程度
-        x_obstacle_weight = 0.5
-        jerk_gain = 0.5
-        a_change_gain = 0.2
+        x_weight = 2.5#1.5  # 原本可能是 0.1，加強貼合程度
+        x_obstacle_weight = 0.0
+        jerk_gain = 0.1
+        a_change_gain = 0.1
       else:
         x_weight = 0.1
         x_obstacle_weight = 0.0
