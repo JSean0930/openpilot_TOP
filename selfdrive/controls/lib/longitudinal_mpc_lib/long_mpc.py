@@ -75,11 +75,11 @@ def get_danger_zone_cost(v_ego):
   # 線性插值：0 m/s → 100，33.3 m/s (120 km/h) → 300
   #return np.interp(v_ego, [0.0, 27.78], [120.0, 500.0])
   if v_ego <= mid_thr:
-    return 150.0#200.0
+    return 200.0
   elif v_ego <= high_thr:
-    return 200.0#250.0#np.interp(v_ego, [10.0, 19.5], [130.0, 300.0])
+    return 250.0#np.interp(v_ego, [10.0, 19.5], [130.0, 300.0])
   else:
-    return 250.0#300.0#np.interp(v_ego, [19.5, 27.8], [300.0, 600.0])
+    return 300.0#np.interp(v_ego, [19.5, 27.8], [300.0, 600.0])
 
 #def get_lead_danger_factor(v_ego):
   #return np.interp(v_ego, [0.0, 33.3], [1.0, 1.4])  # 線性插值，隨速度提升危險因子增加
@@ -398,7 +398,7 @@ class LongitudinalMpc:
       # ✅ 如果是 e2e 主導，增加 MPC 對軌跡貼合懲罰（例如貼近模型預測軌跡）
       if self.source == 'e2e':
         x_weight = 2.5#1.5  # 原本可能是 0.1，加強貼合程度
-        x_obstacle_weight = 0.0
+        x_obstacle_weight = 0.5
         jerk_gain = 0.1
         a_change_gain = 0.1
       else:
@@ -435,7 +435,7 @@ class LongitudinalMpc:
     if v_ego <= mid_thr:
       # 若前車真的明顯在啟動，允許快速起步
       #if v_lead < 1.0:
-      if a_lead > 0.3:
+      if a_lead > 0.2:
         sensitivity_gain = 4.0 # 起步靈敏
       else:
         sensitivity_gain = 3.0 # 煞車靈敏
@@ -575,22 +575,17 @@ class LongitudinalMpc:
       cruise_dist = cruise_target[1]
 
       #若低速且前車未加速 → 保留 e2e；否則用混合
-      lead_accel = (a_lead0 > 0.3 and radarstate.leadOne.status) or \
-                     (a_lead1 > 0.3 and radarstate.leadTwo.status)
+      lead_accel = (a_lead0 > 0.2 and radarstate.leadOne.status) or \
+                     (a_lead1 > 0.2 and radarstate.leadTwo.status)
       
       # ✅ 決定使用 e2e 或 x_mixed 軌跡
-      #if v_ego <= high_thr and not lead_accel:
-      if v_ego <= mid_thr:
+      if v_ego <= mid_thr and not lead_accel:
+      #if v_ego <= mid_thr:
         x[:] = x_e2e
         self.source = 'e2e'
       else:
         x[:] = x_mixed
       
-        # 動態判斷來源
-        if self.source == 'e2e':
-          self.source = 'e2e' if e2e_dist > cruise_dist * 0.9 else 'cruise'
-        else:
-          self.source = 'e2e' if e2e_dist > cruise_dist * 1.1 else 'cruise'
       # 更新 MPC yref
       self.yref[:,1] = x
       self.yref[:,2] = v
