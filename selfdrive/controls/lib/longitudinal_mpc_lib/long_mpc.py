@@ -408,9 +408,9 @@ class LongitudinalMpc:
         a_change_gain = 1.0
         
       if v_ego <= mid_thr:
-        j_ego_v_ego *= 20.0  # 強化低速舒適性 20
+        j_ego_v_ego *= 1.0  # 強化低速舒適性 20
       #cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 2.5 * j_ego_v_ego]
-      cost_weights = [x_obstacle_weight, x_weight, 0.2, 5.0, a_change_cost * a_change_v_ego * a_change_gain, 2.5 * j_ego_v_ego * jerk_gain]
+      cost_weights = [x_obstacle_weight, x_weight, 0.2, 5.0, a_change_cost * a_change_v_ego * a_change_gain, 1.0 * j_ego_v_ego * jerk_gain]
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, danger_cost]
     else:
       raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner cost set')
