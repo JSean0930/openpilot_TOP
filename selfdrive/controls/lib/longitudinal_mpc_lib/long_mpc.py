@@ -566,7 +566,7 @@ class LongitudinalMpc:
       w = np.clip((v_ego - v_low) / (v_high - v_low), 0.0, 0.4)
       #x_mixed = (1 - w) * np.minimum(x_e2e, cruise_target) + w * np.maximum(x_e2e, cruise_target)
       #x_mixed = 0.3 * np.minimum(x_e2e, cruise_target) + 0.7 * np.maximum(x_e2e, cruise_target)
-      x_mixed = 0.5 * np.minimum(x_e2e, cruise_target) + 0.5 * np.maximum(x_e2e, cruise_target)
+      x_mixed = 0.2 * np.minimum(x_e2e, cruise_target) + 0.8 * np.maximum(x_e2e, cruise_target)
       #x_mixed = w * np.minimum(x_e2e, cruise_target) + (1 - w) * np.maximum(x_e2e, cruise_target)
       
       #x[:] = x_mixed  # 修正此行
