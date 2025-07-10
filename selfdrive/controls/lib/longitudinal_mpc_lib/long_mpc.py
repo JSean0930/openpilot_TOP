@@ -402,7 +402,7 @@ class LongitudinalMpc:
         jerk_gain = 0.1
         a_change_gain = 0.1
       else:
-        x_weight = 1.5#0.1
+        x_weight = 0.1
         x_obstacle_weight = 0.5#0.0
         jerk_gain = 1.0
         a_change_gain = 1.0
