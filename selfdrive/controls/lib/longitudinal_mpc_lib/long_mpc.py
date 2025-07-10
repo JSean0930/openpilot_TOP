@@ -88,9 +88,9 @@ def get_lead_danger_factor(v_ego):
   if v_ego <= mid_thr:
     return 0.9
   elif v_ego <= high_thr:
-    return 1.0
+    return 0.9
   else:
-    return 1.1
+    return 1.0
 
 def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
@@ -379,7 +379,7 @@ class LongitudinalMpc:
     relative_dist = np.clip(v_lead - v_ego, -5.0, 5.0)
 
     j_ego_v_ego = np.interp(v_ego, [0, mid_thr, high_thr], [0.3, 1.0, 2.0])       # 高速 jerk cost 高
-    a_change_v_ego = np.interp(relative_dist, [-1.0, 0.0, 1.0], [1.2, 1.0, 0.5])  # 前車遠 → 提高靈敏度
+    a_change_v_ego = np.interp(relative_dist, [-1.0, 0.0, 1.0], [1.2, 1.0, 0.7])  # 前車遠 → 提高靈敏度
     #========================
     danger_cost = get_danger_zone_cost(v_ego)
     #cost_weights = [跟車距離誤差,權重越大，MPC 越嚴格維持安全距離 / 絕對位置：對車輛位置的懲罰 / 速度跟蹤：對車速的懲罰 
@@ -402,15 +402,15 @@ class LongitudinalMpc:
         jerk_gain = 0.1
         a_change_gain = 0.1
       else:
-        x_weight = 0.1
-        x_obstacle_weight = 0.0
+        x_weight = 1.5#0.1
+        x_obstacle_weight = 0.5#0.0
         jerk_gain = 1.0
         a_change_gain = 1.0
         
       if v_ego <= mid_thr:
-        j_ego_v_ego *= 1.0  # 強化低速舒適性 20
+        j_ego_v_ego *= 20.0  # 強化低速舒適性 20
       #cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 2.5 * j_ego_v_ego]
-      cost_weights = [x_obstacle_weight, x_weight, 0.2, 5.0, a_change_cost * a_change_v_ego * a_change_gain, 1.0 * j_ego_v_ego * jerk_gain]
+      cost_weights = [x_obstacle_weight, x_weight, 0.2, 5.0, a_change_cost * a_change_v_ego * a_change_gain, 2.5 * j_ego_v_ego * jerk_gain]
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, danger_cost]
     else:
       raise NotImplementedError(f'Planner mode {self.mode} not recognized in planner cost set')
@@ -503,10 +503,7 @@ class LongitudinalMpc:
 
     self.params[:,0] = ACCEL_MIN
     self.params[:,1] = ACCEL_MAX
-    #===================================================================
-    # 閾值（m/s）
-    #low_thr  = 10.0 / 3.6   # km/hr to m/s
-    #high_thr = 30.0 / 3.6   # km/hr to m/s
+
     #===================================================================
     # 讀當前速度
     v_ego = self.x0[1]
@@ -568,7 +565,8 @@ class LongitudinalMpc:
       v_low, v_high = 0.5, mid_thr
       w = np.clip((v_ego - v_low) / (v_high - v_low), 0.0, 0.4)
       #x_mixed = (1 - w) * np.minimum(x_e2e, cruise_target) + w * np.maximum(x_e2e, cruise_target)
-      x_mixed = 0.3 * np.minimum(x_e2e, cruise_target) + 0.7 * np.maximum(x_e2e, cruise_target)
+      #x_mixed = 0.3 * np.minimum(x_e2e, cruise_target) + 0.7 * np.maximum(x_e2e, cruise_target)
+      x_mixed = 0.5 * np.minimum(x_e2e, cruise_target) + 0.5 * np.maximum(x_e2e, cruise_target)
       #x_mixed = w * np.minimum(x_e2e, cruise_target) + (1 - w) * np.maximum(x_e2e, cruise_target)
       
       #x[:] = x_mixed  # 修正此行
