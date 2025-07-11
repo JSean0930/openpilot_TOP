@@ -66,7 +66,7 @@ CRUISE_MAX_ACCEL = 1.6
 #===================================================================
 # 閾值（m/s）
 low_thr  = 20.0 / 3.6   # km/hr to m/s
-mid_thr = 30.0 / 3.6   # km/hr to m/s
+mid_thr = 40.0 / 3.6   # km/hr to m/s
 high_thr = 70.0 / 3.6
 #===================================================================
 
@@ -88,7 +88,7 @@ def get_lead_danger_factor(v_ego):
   if v_ego <= mid_thr:
     return 0.9
   elif v_ego <= high_thr:
-    return 0.9
+    return 0.8
   else:
     return 1.0
 
@@ -567,6 +567,7 @@ class LongitudinalMpc:
       #x_mixed = (1 - w) * np.minimum(x_e2e, cruise_target) + w * np.maximum(x_e2e, cruise_target)
       #x_mixed = 0.3 * np.minimum(x_e2e, cruise_target) + 0.7 * np.maximum(x_e2e, cruise_target)
       x_mixed = 0.2 * np.minimum(x_e2e, cruise_target) + 0.8 * np.maximum(x_e2e, cruise_target)
+      #x_mixed = np.maximum(x_e2e, cruise_target)
       #x_mixed = w * np.minimum(x_e2e, cruise_target) + (1 - w) * np.maximum(x_e2e, cruise_target)
       
       #x[:] = x_mixed  # 修正此行
