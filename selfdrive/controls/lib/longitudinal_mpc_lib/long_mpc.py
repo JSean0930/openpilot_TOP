@@ -378,7 +378,7 @@ class LongitudinalMpc:
     v_lead = v_lead0 if v_lead0 < v_lead1 else v_lead1
     relative_dist = np.clip(v_lead - v_ego, -5.0, 5.0)
 
-    j_ego_v_ego = np.interp(v_ego, [0, mid_thr, high_thr], [0.3, 1.0, 2.0])       # 高速 jerk cost 高
+    j_ego_v_ego = np.interp(v_ego, [0, mid_thr, high_thr], [0.6, 1.0, 2.0])       # 高速 jerk cost 高
     a_change_v_ego = np.interp(relative_dist, [-1.0, 0.0, 1.0], [1.2, 1.0, 0.7])  # 前車遠 → 提高靈敏度
     #========================
     danger_cost = get_danger_zone_cost(v_ego)
@@ -408,7 +408,7 @@ class LongitudinalMpc:
         a_change_gain = 0.5
         
       if v_ego <= mid_thr:
-        j_ego_v_ego *= 25.0  # 強化低速舒適性 20
+        j_ego_v_ego *= 30.0  # 強化低速舒適性 20
       #cost_weights = [0., 0.1, 0.2, 5.0, a_change_cost * a_change_v_ego, 2.5 * j_ego_v_ego]
       cost_weights = [x_obstacle_weight, x_weight, 0.2, 5.0, a_change_cost * a_change_v_ego * a_change_gain, 2.5 * j_ego_v_ego * jerk_gain]
       constraint_cost_weights = [LIMIT_COST, LIMIT_COST, LIMIT_COST, danger_cost]
