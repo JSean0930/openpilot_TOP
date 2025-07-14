@@ -90,7 +90,7 @@ def get_lead_danger_factor(v_ego):
   elif v_ego <= high_thr:
     return 0.8
   else:
-    return 1.0
+    return 0.9
 
 def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
