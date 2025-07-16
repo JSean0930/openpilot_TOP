@@ -86,7 +86,7 @@ def get_danger_zone_cost(v_ego):
 
 def get_lead_danger_factor(v_ego):
   if v_ego <= mid_thr:
-    return 0.75
+    return 0.8
   elif v_ego <= high_thr:
     return 0.8
   else:
